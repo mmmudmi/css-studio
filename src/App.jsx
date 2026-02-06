@@ -30,6 +30,7 @@ function CssShapes() {
   const [tailwindLoaded, setTailwindLoaded] = useState(false);
   const [selectedShape, setSelectedShape] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [copiedHtml, setCopiedHtml] = useState(false);
   const [activeTab, setActiveTab] = useState('search'); // 'search', 'create', or 'saved'
   const [shapeType, setShapeType] = useState('all'); // 'all', 'shape', or 'object'
   const [savedShapeType, setSavedShapeType] = useState('all'); // 'all', 'shape', 'object', or 'creation'
@@ -114,6 +115,26 @@ function CssShapes() {
       return `radial-gradient(circle, ${colorOpacity < 100 ? primaryRgba : primaryColor}, ${colorOpacity < 100 ? secondaryRgba : secondaryColor})`;
     }
   }, [colorMode, primaryColor, secondaryColor, gradientAngle, colorOpacity, hexToRgba]);
+
+  // Reset all settings to defaults
+  const resetToDefaults = useCallback(() => {
+    setColorMode('solid');
+    setPrimaryColor('#004aad');
+    setSecondaryColor('#ffde59');
+    setGradientAngle(135);
+    setColorOpacity(100);
+    setSize(100);
+    setRotation(0);
+    setFlipX(false);
+    setFlipY(false);
+    setShapeOptions({});
+  }, []);
+
+  // Close shape card and reset settings
+  const closeShapeCard = useCallback(() => {
+    setSelectedShape(null);
+    resetToDefaults();
+  }, [resetToDefaults]);
 
   useEffect(() => {
     if (!document.getElementById('tailwind-script')) {
@@ -412,6 +433,13 @@ ${creationShapes.map((shape, index) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
+
+  const copyHtmlToClipboard = useCallback((text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedHtml(true);
+      setTimeout(() => setCopiedHtml(false), 2000);
     });
   }, []);
 
@@ -993,14 +1021,14 @@ ${creationShapes.map((shape, index) => {
               src="https://i.postimg.cc/5N639Lx9/Blue-and-Beige-Modern-Handwritten-Art-Logo.png" 
               alt="Logo" 
               style={{ height: '50px', width: 'auto', cursor: 'pointer' }}
-              onClick={() => { setActiveTab('search'); setSelectedShape(null); }}
+              onClick={() => { setActiveTab('search'); closeShapeCard(); }}
             />
           </div>
           
           {/* Main Tabs */}
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: '#fff' }}>
             <button
-              onClick={() => { setActiveTab('search'); setSelectedShape(null); }}
+              onClick={() => { setActiveTab('search'); closeShapeCard(); }}
               className="px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
               style={{
                 background: activeTab === 'search' ? '#004aad' : 'transparent',
@@ -1015,7 +1043,7 @@ ${creationShapes.map((shape, index) => {
               Search
             </button>
             <button
-              onClick={() => { setActiveTab('create'); setSelectedShape(null); }}
+              onClick={() => { setActiveTab('create'); closeShapeCard(); }}
               className="px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
               style={{
                 background: activeTab === 'create' ? '#004aad' : 'transparent',
@@ -1029,7 +1057,7 @@ ${creationShapes.map((shape, index) => {
               Create
             </button>
             <button
-              onClick={() => { setActiveTab('saved'); setSelectedShape(null); }}
+              onClick={() => { setActiveTab('saved'); closeShapeCard(); }}
               className="px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
               style={{
                 background: activeTab === 'saved' ? '#004aad' : 'transparent',
@@ -1236,7 +1264,7 @@ ${creationShapes.map((shape, index) => {
                     message: `Are you sure you want to delete "${selectedShape.name}"? This action cannot be undone.`,
                     onConfirm: () => {
                       deleteSavedShape(selectedShape.id);
-                      setSelectedShape(null);
+                      closeShapeCard();
                     }
                   });
                 }}
@@ -1417,12 +1445,14 @@ ${creationShapes.map((shape, index) => {
           {selectedShape ? (
             <ShapeDetailView
               shape={selectedShape}
-              onBack={() => setSelectedShape(null)}
+              onBack={() => closeShapeCard()}
               generateCSS={generateCSS}
               renderShapePreview={renderShapePreview}
               size={size}
               copied={copied}
+              copiedHtml={copiedHtml}
               copyToClipboard={copyToClipboard}
+              copyHtmlToClipboard={copyHtmlToClipboard}
               colorValue={colorValue}
               onSave={() => {
                 setSaveDialogName(selectedShape.name);
@@ -1506,7 +1536,7 @@ ${creationShapes.map((shape, index) => {
 }
 
 // Shape Detail View Component
-function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size, copied, copyToClipboard, colorValue, onSave, onDelete, onRename, onUpdateCreation, onSaveAsNew, isSaved, showNotification }) {
+function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size, copied, copiedHtml, copyToClipboard, copyHtmlToClipboard, colorValue, onSave, onDelete, onRename, onUpdateCreation, onSaveAsNew, isSaved, showNotification }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(shape.name);
   const [isEditingCreation, setIsEditingCreation] = useState(false);
@@ -1535,10 +1565,13 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
       }
     };
     
-    const getBorderRadius = (type) => {
+    const getBorderRadius = (s) => {
+      const type = s.type;
+      const borderRadius = s.borderRadius;
       switch (type) {
         case 'circle': case 'ellipse': return '50%';
-        case 'rectangle': case 'square': return '4px';
+        case 'rectangle': case 'square': 
+          return borderRadius !== undefined ? `${borderRadius}px` : '4px';
         default: return null;
       }
     };
@@ -1573,11 +1606,13 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
         if (s.fontStyle && s.fontStyle !== 'normal') {
           css += `  font-style: ${s.fontStyle};\n`;
         }
-        if (s.textAlign) {
-          css += `  text-align: ${s.textAlign};\n`;
-        }
+        const textAlign = s.textAlign || 'left';
+        css += `  text-align: ${textAlign};\n`;
         css += `  display: flex;\n`;
         css += `  align-items: center;\n`;
+        // Add justify-content based on text alignment
+        const justifyContent = textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start';
+        css += `  justify-content: ${justifyContent};\n`;
         css += `  overflow: hidden;\n`;
         css += `  white-space: pre-wrap;\n`;
         css += `  word-break: break-word;\n`;
@@ -1590,7 +1625,7 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
         css += `  clip-path: ${clipPath};\n`;
       }
       
-      const borderRadius = getBorderRadius(s.type);
+      const borderRadius = getBorderRadius(s);
       if (borderRadius) {
         css += `  border-radius: ${borderRadius};\n`;
       }
@@ -1788,8 +1823,9 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
       <div>
         <div className="relative">
           <pre 
-            className="p-5 rounded-xl text-sm overflow-auto"
+            className="p-5 rounded-xl text-sm overflow-auto cursor-pointer"
             style={{ background: '#f3f4f6', color: '#000', maxHeight: '400px' }}
+            onClick={() => copyToClipboard(cssCode)}
           >
             <code>{cssCode}</code>
           </pre>
@@ -1804,12 +1840,22 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
 
         <div className="mt-4">
           <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>HTML Usage</p>
-          <pre 
-            className="p-4 rounded-xl text-sm"
-            style={{ background: '#fff', border: '1px solid #e0d9cc', color: '#000' }}
-          >
-            <code>{htmlCode}</code>
-          </pre>
+          <div className="relative">
+            <pre 
+              className="p-5 rounded-xl text-sm overflow-auto cursor-pointer"
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '400px' }}
+              onClick={() => copyHtmlToClipboard(htmlCode)}
+            >
+              <code>{htmlCode}</code>
+            </pre>
+            <button
+              onClick={() => copyHtmlToClipboard(htmlCode)}
+              className="absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+              style={{ background: copiedHtml ? '#10b981' : '#004aad', color: '#fff' }}
+            >
+              {copiedHtml ? 'Copied!' : 'Copy HTML'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2068,7 +2114,53 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
   }, [selectedId, canvasShapes, clipboardShape, historyIndex, history]);
 
   // Get clip-path for shape type
-  const getClipPath = (type) => {
+  const getClipPath = (shape) => {
+    const type = typeof shape === 'string' ? shape : shape.type;
+    const curve = typeof shape === 'object' ? (shape.curve || 0) : 0;
+    
+    // If curve is applied, use rounded polygon via SVG path
+    if (curve > 0 && ['triangle', 'rightTriangle', 'diamond', 'star'].includes(type)) {
+      const points = {
+        triangle: [[50, 0], [100, 100], [0, 100]],
+        rightTriangle: [[0, 0], [0, 100], [100, 100]],
+        diamond: [[50, 0], [100, 50], [50, 100], [0, 50]],
+        star: [[50, 0], [61, 35], [98, 35], [68, 57], [79, 91], [50, 70], [21, 91], [32, 57], [2, 35], [39, 35]]
+      }[type];
+      
+      if (points) {
+        const radius = curve * 0.3;
+        let path = '';
+        const n = points.length;
+        
+        for (let i = 0; i < n; i++) {
+          const prev = points[(i - 1 + n) % n];
+          const curr = points[i];
+          const next = points[(i + 1) % n];
+          
+          const v1 = [prev[0] - curr[0], prev[1] - curr[1]];
+          const v2 = [next[0] - curr[0], next[1] - curr[1]];
+          
+          const len1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
+          const len2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1]);
+          
+          const maxR = Math.min(len1, len2) * 0.4;
+          const r = Math.min(radius, maxR);
+          
+          const start = [curr[0] + (v1[0] / len1) * r, curr[1] + (v1[1] / len1) * r];
+          const end = [curr[0] + (v2[0] / len2) * r, curr[1] + (v2[1] / len2) * r];
+          
+          if (i === 0) {
+            path += `M ${start[0]} ${start[1]} `;
+          } else {
+            path += `L ${start[0]} ${start[1]} `;
+          }
+          path += `Q ${curr[0]} ${curr[1]} ${end[0]} ${end[1]} `;
+        }
+        path += 'Z';
+        return `path('${path}')`;
+      }
+    }
+    
     switch (type) {
       case 'triangle': return 'polygon(50% 0%, 100% 100%, 0% 100%)';
       case 'rightTriangle': return 'polygon(0% 0%, 0% 100%, 100% 100%)';
@@ -2082,10 +2174,14 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
   };
 
   // Get border-radius for shape type
-  const getBorderRadius = (type) => {
+  const getBorderRadius = (shape) => {
+    const type = typeof shape === 'string' ? shape : shape.type;
+    const borderRadius = typeof shape === 'object' ? shape.borderRadius : undefined;
+    
     switch (type) {
       case 'circle': case 'ellipse': return '50%';
-      case 'rectangle': case 'square': return '4px';
+      case 'rectangle': case 'square': 
+        return borderRadius !== undefined ? `${borderRadius}px` : '4px';
       default: return '0';
     }
   };
@@ -2236,11 +2332,11 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
         css += `  justify-content: center;\n`;
       } else {
         css += `  background: ${shape.color};\n`;
-        const clipPath = getClipPath(shape.type);
+        const clipPath = getClipPath(shape);
         if (clipPath !== 'none') {
           css += `  clip-path: ${clipPath};\n`;
         } else {
-          css += `  border-radius: ${getBorderRadius(shape.type)};\n`;
+          css += `  border-radius: ${getBorderRadius(shape)};\n`;
         }
       }
       
@@ -2515,18 +2611,22 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
                 >
                   {shape.type === 'text' ? (
                     <div
-                      className="pointer-events-none flex items-center justify-center"
+                      className="pointer-events-none"
                       style={{
                         width: '100%',
                         height: '100%',
                         color: shape.color,
                         opacity: (shape.opacity ?? 100) / 100,
                         fontSize: `${shape.fontSize || 24}px`,
-                        fontFamily: shape.fontFamily || 'Arial',
+                        fontFamily: shape.fontFamily || 'Arial, sans-serif',
                         fontWeight: shape.fontWeight || 'normal',
                         fontStyle: shape.fontStyle || 'normal',
-                        textAlign: shape.textAlign || 'center',
-                        whiteSpace: 'nowrap',
+                        textAlign: shape.textAlign || 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: shape.textAlign === 'center' ? 'center' : shape.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
                         overflow: 'hidden',
                         transform: flipTransform || 'none'
                       }}
@@ -2541,8 +2641,8 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
                         height: '100%',
                         background: shape.color,
                         opacity: (shape.opacity ?? 100) / 100,
-                        clipPath: getClipPath(shape.type),
-                        borderRadius: getBorderRadius(shape.type),
+                        clipPath: getClipPath(shape),
+                        borderRadius: getBorderRadius(shape),
                         transform: flipTransform || 'none'
                       }}
                     />
@@ -2816,6 +2916,43 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
                 </div>
               </div>
               
+              {/* Shape-specific Controls - Border Radius for rectangles/squares */}
+              {(selectedShape.type === 'rectangle' || selectedShape.type === 'square') && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
+                    Corner Radius: {selectedShape.borderRadius || 0}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="50"
+                    value={selectedShape.borderRadius || 0}
+                    onChange={(e) => updateSelectedShape('borderRadius', Number(e.target.value))}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.borderRadius || 0) / 50 * 100}%, #e5e7eb ${(selectedShape.borderRadius || 0) / 50 * 100}%)` }}
+                  />
+                </div>
+              )}
+              
+              {/* Shape-specific Controls - Corner Curve for triangle, rightTriangle, diamond, star */}
+              {(selectedShape.type === 'triangle' || selectedShape.type === 'rightTriangle' || selectedShape.type === 'diamond' || selectedShape.type === 'star') && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
+                    Corner Curve: {selectedShape.curve || 0}
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={selectedShape.curve || 0}
+                    onChange={(e) => updateSelectedShape('curve', Number(e.target.value))}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.curve || 0)}%, #e5e7eb ${(selectedShape.curve || 0)}%)` }}
+                  />
+                </div>
+              )}
+              
               {/* Position */}
               <div className="mb-4 grid grid-cols-2 gap-2">
                 <div>
@@ -3083,7 +3220,53 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   ];
   
   // Get clip-path for shape type
-  const getClipPath = (type) => {
+  const getClipPath = (shape) => {
+    const type = typeof shape === 'string' ? shape : shape.type;
+    const curve = typeof shape === 'object' ? (shape.curve || 0) : 0;
+    
+    // If curve is applied, use rounded polygon via SVG path
+    if (curve > 0 && ['triangle', 'rightTriangle', 'diamond', 'star'].includes(type)) {
+      const points = {
+        triangle: [[50, 0], [100, 100], [0, 100]],
+        rightTriangle: [[0, 0], [0, 100], [100, 100]],
+        diamond: [[50, 0], [100, 50], [50, 100], [0, 50]],
+        star: [[50, 0], [61, 35], [98, 35], [68, 57], [79, 91], [50, 70], [21, 91], [32, 57], [2, 35], [39, 35]]
+      }[type];
+      
+      if (points) {
+        const radius = curve * 0.3;
+        let path = '';
+        const n = points.length;
+        
+        for (let i = 0; i < n; i++) {
+          const prev = points[(i - 1 + n) % n];
+          const curr = points[i];
+          const next = points[(i + 1) % n];
+          
+          const v1 = [prev[0] - curr[0], prev[1] - curr[1]];
+          const v2 = [next[0] - curr[0], next[1] - curr[1]];
+          
+          const len1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
+          const len2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1]);
+          
+          const maxR = Math.min(len1, len2) * 0.4;
+          const r = Math.min(radius, maxR);
+          
+          const start = [curr[0] + (v1[0] / len1) * r, curr[1] + (v1[1] / len1) * r];
+          const end = [curr[0] + (v2[0] / len2) * r, curr[1] + (v2[1] / len2) * r];
+          
+          if (i === 0) {
+            path += `M ${start[0]} ${start[1]} `;
+          } else {
+            path += `L ${start[0]} ${start[1]} `;
+          }
+          path += `Q ${curr[0]} ${curr[1]} ${end[0]} ${end[1]} `;
+        }
+        path += 'Z';
+        return `path('${path}')`;
+      }
+    }
+    
     switch (type) {
       case 'triangle': return 'polygon(50% 0%, 100% 100%, 0% 100%)';
       case 'rightTriangle': return 'polygon(0% 0%, 0% 100%, 100% 100%)';
@@ -3097,12 +3280,15 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   };
   
   // Get border-radius for shape type
-  const getBorderRadius = (type, width, height) => {
+  const getBorderRadius = (shape, width, height) => {
+    const type = typeof shape === 'string' ? shape : shape.type;
+    const borderRadius = typeof shape === 'object' ? shape.borderRadius : undefined;
+    
     switch (type) {
       case 'circle': return '50%';
       case 'ellipse': return '50%';
-      case 'rectangle': return '4px';
-      case 'square': return '4px';
+      case 'rectangle': case 'square': 
+        return borderRadius !== undefined ? `${borderRadius}px` : '4px';
       default: return '0';
     }
   };
@@ -3273,11 +3459,11 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
       } else {
         css += `  background: ${shape.color};\n`;
         
-        const clipPath = getClipPath(shape.type);
+        const clipPath = getClipPath(shape);
         if (clipPath !== 'none') {
           css += `  clip-path: ${clipPath};\n`;
         } else {
-          css += `  border-radius: ${getBorderRadius(shape.type, shape.width, shape.height)};\n`;
+          css += `  border-radius: ${getBorderRadius(shape, shape.width, shape.height)};\n`;
         }
       }
       
@@ -3700,18 +3886,22 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                 >
                   {shape.type === 'text' ? (
                     <div
-                      className="pointer-events-none flex items-center justify-center"
+                      className="pointer-events-none"
                       style={{
                         width: '100%',
                         height: '100%',
                         color: shape.color,
                         opacity: (shape.opacity ?? 100) / 100,
                         fontSize: `${shape.fontSize || 24}px`,
-                        fontFamily: shape.fontFamily || 'Arial',
+                        fontFamily: shape.fontFamily || 'Arial, sans-serif',
                         fontWeight: shape.fontWeight || 'normal',
                         fontStyle: shape.fontStyle || 'normal',
-                        textAlign: shape.textAlign || 'center',
-                        whiteSpace: 'nowrap',
+                        textAlign: shape.textAlign || 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: shape.textAlign === 'center' ? 'center' : shape.textAlign === 'right' ? 'flex-end' : 'flex-start',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
                         overflow: 'hidden',
                         transform: flipTransform || 'none'
                       }}
@@ -3726,8 +3916,8 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                         height: '100%',
                         background: shape.color,
                         opacity: (shape.opacity ?? 100) / 100,
-                        clipPath: getClipPath(shape.type),
-                        borderRadius: getBorderRadius(shape.type, shape.width, shape.height),
+                        clipPath: getClipPath(shape),
+                        borderRadius: getBorderRadius(shape, shape.width, shape.height),
                         transform: flipTransform || 'none'
                       }}
                     />
@@ -4011,6 +4201,43 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                   </button>
                 </div>
               </div>
+              
+              {/* Shape-specific Controls - Border Radius for rectangles/squares */}
+              {(selectedShape.type === 'rectangle' || selectedShape.type === 'square') && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
+                    Corner Radius: {selectedShape.borderRadius || 0}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="50"
+                    value={selectedShape.borderRadius || 0}
+                    onChange={(e) => updateSelectedShape('borderRadius', Number(e.target.value))}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.borderRadius || 0) / 50 * 100}%, #e5e7eb ${(selectedShape.borderRadius || 0) / 50 * 100}%)` }}
+                  />
+                </div>
+              )}
+              
+              {/* Shape-specific Controls - Corner Curve for triangle, rightTriangle, diamond, star */}
+              {(selectedShape.type === 'triangle' || selectedShape.type === 'rightTriangle' || selectedShape.type === 'diamond' || selectedShape.type === 'star') && (
+                <div className="mb-4">
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
+                    Corner Curve: {selectedShape.curve || 0}
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={selectedShape.curve || 0}
+                    onChange={(e) => updateSelectedShape('curve', Number(e.target.value))}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.curve || 0)}%, #e5e7eb ${(selectedShape.curve || 0)}%)` }}
+                  />
+                </div>
+              )}
               
               {/* Position */}
               <div className="mb-4 grid grid-cols-2 gap-2">

@@ -38,6 +38,75 @@ function generateBlobBorderRadius(granularity, depth) {
   return `${h} / ${v}`;
 }
 
+// Helper function to generate rounded polygon path
+// Takes array of points [{x, y}] in percentages and a curve amount (0-100)
+function generateRoundedPolygon(points, curve) {
+  if (curve === 0) {
+    return `polygon(${points.map(p => `${p.x}% ${p.y}%`).join(', ')})`;
+  }
+  
+  // For curved polygons, we use a path with rounded corners
+  // curve value determines how much to round (as percentage of edge length)
+  const roundAmount = curve / 100 * 0.4; // Max 40% of edge
+  
+  let path = '';
+  const n = points.length;
+  
+  for (let i = 0; i < n; i++) {
+    const curr = points[i];
+    const next = points[(i + 1) % n];
+    const prev = points[(i - 1 + n) % n];
+    
+    // Calculate vectors to adjacent points
+    const toPrev = { x: prev.x - curr.x, y: prev.y - curr.y };
+    const toNext = { x: next.x - curr.x, y: next.y - curr.y };
+    
+    // Calculate distances
+    const distPrev = Math.sqrt(toPrev.x * toPrev.x + toPrev.y * toPrev.y);
+    const distNext = Math.sqrt(toNext.x * toNext.x + toNext.y * toNext.y);
+    
+    // Normalize and scale by round amount
+    const offsetPrev = Math.min(distPrev * roundAmount, distPrev * 0.4);
+    const offsetNext = Math.min(distNext * roundAmount, distNext * 0.4);
+    
+    // Control points
+    const cp1 = {
+      x: curr.x + (toPrev.x / distPrev) * offsetPrev,
+      y: curr.y + (toPrev.y / distPrev) * offsetPrev
+    };
+    const cp2 = {
+      x: curr.x + (toNext.x / distNext) * offsetNext,
+      y: curr.y + (toNext.y / distNext) * offsetNext
+    };
+    
+    if (i === 0) {
+      path += `M ${cp1.x} ${cp1.y} `;
+    }
+    
+    // Quadratic curve through the corner
+    path += `Q ${curr.x} ${curr.y} ${cp2.x} ${cp2.y} `;
+    
+    // Line to next control point
+    const nextPoint = points[(i + 1) % n];
+    const nextNext = points[(i + 2) % n];
+    const toNextNext = { x: nextNext.x - nextPoint.x, y: nextNext.y - nextPoint.y };
+    const distNextNext = Math.sqrt(toNextNext.x * toNextNext.x + toNextNext.y * toNextNext.y);
+    const toNextPrev = { x: curr.x - nextPoint.x, y: curr.y - nextPoint.y };
+    const distNextPrev = Math.sqrt(toNextPrev.x * toNextPrev.x + toNextPrev.y * toNextPrev.y);
+    
+    const nextCp1 = {
+      x: nextPoint.x + (toNextPrev.x / distNextPrev) * Math.min(distNextPrev * roundAmount, distNextPrev * 0.4),
+      y: nextPoint.y + (toNextPrev.y / distNextPrev) * Math.min(distNextPrev * roundAmount, distNextPrev * 0.4)
+    };
+    
+    path += `L ${nextCp1.x} ${nextCp1.y} `;
+  }
+  
+  path += 'Z';
+  
+  return `path('${path}')`;
+}
+
 // Helper function to generate flower petal mask positions
 function generateFlowerMask(petals) {
   // Adjust petal size based on number of petals
@@ -93,48 +162,53 @@ export const shapes = [
     name: 'Square',
     type: 'shape',
     category: 'basic',
-    css: (color, size) => `.square {
+    controls: [
+      { name: 'borderRadius', label: 'Corner Radius', type: 'range', min: 0, max: 50, step: 1, default: 0 }
+    ],
+    css: (color, size, options = {}) => {
+      const borderRadius = options.borderRadius ?? 0;
+      const radiusPx = Math.round(size * borderRadius / 100);
+      return `.square {
   width: ${size}px;
   height: ${size}px;
-  background: ${color};
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size,
-      background: color
-    })
+  background: ${color};${borderRadius > 0 ? `\n  border-radius: ${radiusPx}px;` : ''}
+}`;
+    },
+    previewStyle: (color, size, options = {}) => {
+      const borderRadius = options.borderRadius ?? 0;
+      return {
+        width: size,
+        height: size,
+        background: color,
+        borderRadius: `${borderRadius}%`
+      };
+    }
   },
   {
     name: 'Rectangle',
     type: 'shape',
     category: 'basic',
-    css: (color, size) => `.rectangle {
+    controls: [
+      { name: 'borderRadius', label: 'Corner Radius', type: 'range', min: 0, max: 50, step: 1, default: 0 }
+    ],
+    css: (color, size, options = {}) => {
+      const borderRadius = options.borderRadius ?? 0;
+      const radiusPx = Math.round(size * borderRadius / 100);
+      return `.rectangle {
   width: ${size}px;
   height: ${Math.round(size * 0.6)}px;
-  background: ${color};
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size * 0.6,
-      background: color
-    })
-  },
-  {
-    name: 'Rounded Square',
-    type: 'shape',
-    category: 'basic',
-    css: (color, size) => `.rounded-square {
-  width: ${size}px;
-  height: ${size}px;
-  background: ${color};
-  border-radius: ${Math.round(size * 0.15)}px;
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size,
-      background: color,
-      borderRadius: size * 0.15
-    })
+  background: ${color};${borderRadius > 0 ? `\n  border-radius: ${radiusPx}px;` : ''}
+}`;
+    },
+    previewStyle: (color, size, options = {}) => {
+      const borderRadius = options.borderRadius ?? 0;
+      return {
+        width: size,
+        height: size * 0.6,
+        background: color,
+        borderRadius: `${borderRadius}%`
+      };
+    }
   },
   {
     name: 'Pill',
@@ -174,35 +248,65 @@ export const shapes = [
     name: 'Triangle',
     type: 'shape',
     category: 'basic',
-    css: (color, size) => `.triangle {
+    controls: [
+      { name: 'curve', label: 'Corner Curve', type: 'range', min: 0, max: 100, step: 5, default: 0 }
+    ],
+    css: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const clipPath = curve === 0 
+        ? 'polygon(50% 0%, 0% 100%, 100% 100%)'
+        : generateRoundedPolygon([{x: 50, y: 0}, {x: 0, y: 100}, {x: 100, y: 100}], curve);
+      return `.triangle {
   width: ${size}px;
   height: ${size}px;
   background: ${color};
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size,
-      background: color,
-      clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-    })
+  clip-path: ${clipPath};
+}`;
+    },
+    previewStyle: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const clipPath = curve === 0 
+        ? 'polygon(50% 0%, 0% 100%, 100% 100%)'
+        : generateRoundedPolygon([{x: 50, y: 0}, {x: 0, y: 100}, {x: 100, y: 100}], curve);
+      return {
+        width: size,
+        height: size,
+        background: color,
+        clipPath: clipPath
+      };
+    }
   },
   {
     name: 'Right Triangle',
     type: 'shape',
     category: 'basic',
-    css: (color, size) => `.right-triangle {
+    controls: [
+      { name: 'curve', label: 'Corner Curve', type: 'range', min: 0, max: 100, step: 5, default: 0 }
+    ],
+    css: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const clipPath = curve === 0 
+        ? 'polygon(0% 0%, 0% 100%, 100% 100%)'
+        : generateRoundedPolygon([{x: 0, y: 0}, {x: 0, y: 100}, {x: 100, y: 100}], curve);
+      return `.right-triangle {
   width: ${size}px;
   height: ${size}px;
   background: ${color};
-  clip-path: polygon(0% 0%, 0% 100%, 100% 100%);
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size,
-      background: color,
-      clipPath: 'polygon(0% 0%, 0% 100%, 100% 100%)'
-    })
+  clip-path: ${clipPath};
+}`;
+    },
+    previewStyle: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const clipPath = curve === 0 
+        ? 'polygon(0% 0%, 0% 100%, 100% 100%)'
+        : generateRoundedPolygon([{x: 0, y: 0}, {x: 0, y: 100}, {x: 100, y: 100}], curve);
+      return {
+        width: size,
+        height: size,
+        background: color,
+        clipPath: clipPath
+      };
+    }
   },
 
   // Arrows
@@ -335,18 +439,33 @@ export const shapes = [
   {
     name: 'Diamond',
     category: 'polygons',
-    css: (color, size) => `.diamond {
+    controls: [
+      { name: 'curve', label: 'Corner Curve', type: 'range', min: 0, max: 100, step: 5, default: 0 }
+    ],
+    css: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const clipPath = curve === 0 
+        ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
+        : generateRoundedPolygon([{x: 50, y: 0}, {x: 100, y: 50}, {x: 50, y: 100}, {x: 0, y: 50}], curve);
+      return `.diamond {
   width: ${size}px;
   height: ${size}px;
   background: ${color};
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size,
-      background: color,
-      clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
-    })
+  clip-path: ${clipPath};
+}`;
+    },
+    previewStyle: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const clipPath = curve === 0 
+        ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
+        : generateRoundedPolygon([{x: 50, y: 0}, {x: 100, y: 50}, {x: 50, y: 100}, {x: 0, y: 50}], curve);
+      return {
+        width: size,
+        height: size,
+        background: color,
+        clipPath: clipPath
+      };
+    }
   },
   {
     name: 'Parallelogram',
@@ -401,18 +520,43 @@ export const shapes = [
   {
     name: 'Star',
     category: 'stars',
-    css: (color, size) => `.star {
+    controls: [
+      { name: 'curve', label: 'Corner Curve', type: 'range', min: 0, max: 100, step: 5, default: 0 }
+    ],
+    css: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const starPoints = [
+        {x: 50, y: 0}, {x: 61, y: 35}, {x: 98, y: 35}, {x: 68, y: 57}, 
+        {x: 79, y: 91}, {x: 50, y: 70}, {x: 21, y: 91}, {x: 32, y: 57}, 
+        {x: 2, y: 35}, {x: 39, y: 35}
+      ];
+      const clipPath = curve === 0 
+        ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+        : generateRoundedPolygon(starPoints, curve);
+      return `.star {
   width: ${size}px;
   height: ${size}px;
   background: ${color};
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-}`,
-    previewStyle: (color, size) => ({
-      width: size,
-      height: size,
-      background: color,
-      clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-    })
+  clip-path: ${clipPath};
+}`;
+    },
+    previewStyle: (color, size, options = {}) => {
+      const curve = options.curve ?? 0;
+      const starPoints = [
+        {x: 50, y: 0}, {x: 61, y: 35}, {x: 98, y: 35}, {x: 68, y: 57}, 
+        {x: 79, y: 91}, {x: 50, y: 70}, {x: 21, y: 91}, {x: 32, y: 57}, 
+        {x: 2, y: 35}, {x: 39, y: 35}
+      ];
+      const clipPath = curve === 0 
+        ? 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+        : generateRoundedPolygon(starPoints, curve);
+      return {
+        width: size,
+        height: size,
+        background: color,
+        clipPath: clipPath
+      };
+    }
   },
   {
     name: 'Star Six',
