@@ -1,9 +1,6 @@
 <p align="center">
   <img src="https://i.postimg.cc/5N639Lx9/Blue-and-Beige-Modern-Handwritten-Art-Logo.png" alt="CSS Studio Logo" width="150" height="150">
 </p>
-
-<h1 align="center">CSS Studio</h1>
-
 <p align="center">
   Create and customize CSS shapes with an intuitive visual editor.
 </p>
