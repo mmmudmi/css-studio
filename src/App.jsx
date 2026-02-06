@@ -2923,6 +2923,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   const [copiedHTML, setCopiedHTML] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const canvasRef = React.useRef(null);
 
   // Undo/Redo state - initialize with empty canvas state
@@ -3421,9 +3422,9 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
             </>
           )}
           <button
-            onClick={clearCanvas}
+            onClick={() => canvasShapes.length > 0 ? setShowClearConfirm(true) : null}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
-            style={{ background: '#fee2e2', color: '#dc2626' }}
+            style={{ background: '#fee2e2', color: '#dc2626', opacity: canvasShapes.length === 0 ? 0.5 : 1, cursor: canvasShapes.length === 0 ? 'not-allowed' : 'pointer' }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -3432,6 +3433,52 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
           </button>
         </div>
       </div>
+
+      {/* Clear Canvas Confirmation Dialog */}
+      {showClearConfirm && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onKeyDown={(e) => e.key === 'Escape' && setShowClearConfirm(false)}
+          tabIndex={-1}
+          ref={(el) => el?.focus()}
+        >
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-full" style={{ background: '#fee2e2' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold" style={{ color: '#000' }}>Clear Canvas</h3>
+            </div>
+            <p className="text-sm mb-6" style={{ color: '#666' }}>
+              Are you sure you want to clear the canvas? This will remove all shapes and cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all"
+                style={{ background: '#f1f5f9', color: '#666' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  clearCanvas();
+                  setShowClearConfirm(false);
+                }}
+                className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+                style={{ background: '#dc2626', color: '#fff' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Creation Dialog */}
       {showSaveDialog && (
