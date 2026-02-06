@@ -1789,7 +1789,7 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
         <div className="relative">
           <pre 
             className="p-5 rounded-xl text-sm overflow-auto"
-            style={{ background: '#1e1e1e', color: '#d4d4d4', maxHeight: '400px' }}
+            style={{ background: '#f3f4f6', color: '#000', maxHeight: '400px' }}
           >
             <code>{cssCode}</code>
           </pre>
@@ -2871,7 +2871,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
           <div className="relative">
             <pre 
               className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#1e1e1e', color: '#d4d4d4', maxHeight: '200px' }}
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
               onClick={() => copyCSS(generateCanvasCSS())}
             >
               <code>{generateCanvasCSS()}</code>
@@ -2890,7 +2890,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
           <div className="relative">
             <pre 
               className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#1e1e1e', color: '#d4d4d4', maxHeight: '200px' }}
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
               onClick={() => copyHTML(generateCanvasHTML())}
             >
               <code>{generateCanvasHTML()}</code>
@@ -4061,13 +4061,13 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
       </div>
       
       {/* Generated Code */}
-      <div className="mt-6 grid grid-cols-2 gap-4">
+      <div className="mt-6 flex flex-col gap-4">
         <div>
           <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>CSS</label>
           <div className="relative">
             <pre 
               className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#1e1e1e', color: '#d4d4d4', maxHeight: '200px' }}
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
               onClick={() => copyCSS(generateCanvasCSS())}
             >
               <code>{generateCanvasCSS()}</code>
@@ -4086,7 +4086,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
           <div className="relative">
             <pre 
               className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#1e1e1e', color: '#d4d4d4', maxHeight: '200px' }}
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
               onClick={() => copyHTML(generateCanvasHTML())}
             >
               <code>{generateCanvasHTML()}</code>
