@@ -2218,15 +2218,6 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
     e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
     setSelectedId(shape.id);
-    // Bring selected shape to front
-    setCanvasShapes(prev => {
-      const index = prev.findIndex(s => s.id === shape.id);
-      if (index === -1 || index === prev.length - 1) return prev;
-      const newShapes = [...prev];
-      const [selected] = newShapes.splice(index, 1);
-      newShapes.push(selected);
-      return newShapes;
-    });
     setDragState({
       id: shape.id,
       offsetX: e.clientX - rect.left - shape.x,
@@ -2591,8 +2582,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
             }} />
             
             {/* Shapes */}
-            {canvasShapes.map(shape => {
-              const isSelected = shape.id === selectedId;
+            {canvasShapes.map((shape, index) => {
               const flipTransform = [
                 shape.flipX ? 'scaleX(-1)' : '',
                 shape.flipY ? 'scaleY(-1)' : ''
@@ -2607,9 +2597,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
                     top: shape.y,
                     width: shape.width,
                     height: shape.height,
-                    outline: isSelected ? '2px solid #004aad' : 'none',
-                    outlineOffset: '2px',
-                    zIndex: isSelected ? 10 : 1,
+                    zIndex: index + 1,
                     transform: shape.rotation !== 0 ? `rotate(${shape.rotation}deg)` : 'none'
                   }}
                   onClick={(e) => {
@@ -2656,42 +2644,59 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
                       }}
                     />
                   )}
-                  
-                  {/* Resize handles */}
-                  {isSelected && (
-                    <>
-                      <div
-                        className="absolute w-4 h-4 rounded-full cursor-se-resize"
-                        style={{
-                          right: -8,
-                          bottom: -8,
-                          background: '#004aad',
-                          border: '2px solid #fff',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                          zIndex: 20
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          setDragState({
-                            id: shape.id,
-                            type: 'resize',
-                            startWidth: shape.width,
-                            startHeight: shape.height,
-                            startX: e.clientX,
-                            startY: e.clientY
-                          });
-                        }}
-                      />
-                      <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, left: -5 }} />
-                      <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, right: -5 }} />
-                      <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ bottom: -5, left: -5 }} />
-                    </>
-                  )}
                 </div>
               );
             })}
+            
+            {/* Selection overlay - renders on top */}
+            {selectedId && (() => {
+              const shape = canvasShapes.find(s => s.id === selectedId);
+              if (!shape) return null;
+              return (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: shape.x,
+                    top: shape.y,
+                    width: shape.width,
+                    height: shape.height,
+                    outline: '2px solid #004aad',
+                    outlineOffset: '2px',
+                    zIndex: 1000,
+                    transform: shape.rotation !== 0 ? `rotate(${shape.rotation}deg)` : 'none'
+                  }}
+                >
+                  {/* Resize handle */}
+                  <div
+                    className="absolute w-4 h-4 rounded-full cursor-se-resize pointer-events-auto"
+                    style={{
+                      right: -8,
+                      bottom: -8,
+                      background: '#004aad',
+                      border: '2px solid #fff',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setDragState({
+                        id: shape.id,
+                        type: 'resize',
+                        startWidth: shape.width,
+                        startHeight: shape.height,
+                        startX: e.clientX,
+                        startY: e.clientY
+                      });
+                    }}
+                  />
+                  {/* Corner indicators */}
+                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, left: -5 }} />
+                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, right: -5 }} />
+                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ bottom: -5, left: -5 }} />
+                </div>
+              );
+            })()}
             
             {/* Empty state */}
             {canvasShapes.length === 0 && (
@@ -3347,15 +3352,6 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
     e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
     setSelectedId(shape.id);
-    // Bring selected shape to front
-    setCanvasShapes(prev => {
-      const index = prev.findIndex(s => s.id === shape.id);
-      if (index === -1 || index === prev.length - 1) return prev;
-      const newShapes = [...prev];
-      const [selected] = newShapes.splice(index, 1);
-      newShapes.push(selected);
-      return newShapes;
-    });
     setDragState({
       id: shape.id,
       offsetX: e.clientX - rect.left - shape.x,
@@ -3954,7 +3950,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
             }} />
             
             {/* Shapes */}
-            {canvasShapes.map(shape => {
+            {canvasShapes.map((shape, index) => {
               const isSelected = shape.id === selectedId;
               const flipTransform = [
                 shape.flipX ? 'scaleX(-1)' : '',
@@ -3969,9 +3965,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                     top: shape.y,
                     width: shape.width,
                     height: shape.height,
-                    outline: isSelected ? '2px solid #004aad' : 'none',
-                    outlineOffset: '2px',
-                    zIndex: isSelected ? 10 : 1,
+                    zIndex: index + 1,
                     transform: shape.rotation !== 0 ? `rotate(${shape.rotation}deg)` : 'none'
                   }}
                   onClick={(e) => {
@@ -4018,45 +4012,60 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                       }}
                     />
                   )}
-                  
-                  {/* Resize handles - all corners */}
-                  {isSelected && (
-                    <>
-                      {/* Bottom-right resize handle */}
-                      <div
-                        className="absolute w-4 h-4 rounded-full cursor-se-resize"
-                        style={{
-                          right: -8,
-                          bottom: -8,
-                          background: '#004aad',
-                          border: '2px solid #fff',
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                          zIndex: 20
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          setDragState({
-                            id: shape.id,
-                            type: 'resize',
-                            corner: 'br',
-                            startWidth: shape.width,
-                            startHeight: shape.height,
-                            startX: e.clientX,
-                            startY: e.clientY
-                          });
-                        }}
-                      />
-                      {/* Selection border corners */}
-                      <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, left: -5 }} />
-                      <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, right: -5 }} />
-                      <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ bottom: -5, left: -5 }} />
-                    </>
-                  )}
                 </div>
               );
             })}
+            
+            {/* Selection overlay - renders on top */}
+            {selectedId && (() => {
+              const shape = canvasShapes.find(s => s.id === selectedId);
+              if (!shape) return null;
+              return (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: shape.x,
+                    top: shape.y,
+                    width: shape.width,
+                    height: shape.height,
+                    outline: '2px solid #004aad',
+                    outlineOffset: '2px',
+                    zIndex: 1000,
+                    transform: shape.rotation !== 0 ? `rotate(${shape.rotation}deg)` : 'none'
+                  }}
+                >
+                  {/* Resize handle */}
+                  <div
+                    className="absolute w-4 h-4 rounded-full cursor-se-resize pointer-events-auto"
+                    style={{
+                      right: -8,
+                      bottom: -8,
+                      background: '#004aad',
+                      border: '2px solid #fff',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setDragState({
+                        id: shape.id,
+                        type: 'resize',
+                        corner: 'br',
+                        startWidth: shape.width,
+                        startHeight: shape.height,
+                        startX: e.clientX,
+                        startY: e.clientY
+                      });
+                    }}
+                  />
+                  {/* Corner indicators */}
+                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, left: -5 }} />
+                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, right: -5 }} />
+                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ bottom: -5, left: -5 }} />
+                </div>
+              );
+            })()}
             
             {/* Empty state */}
             {canvasShapes.length === 0 && (
