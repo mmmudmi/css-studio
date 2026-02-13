@@ -791,7 +791,7 @@ ${creationShapes.map((shape, index) => {
   }
 
   return (
-    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', background: '#fff' }} className="min-h-screen">
+    <div style={{ fontFamily: 'Inter, system-ui, sans-serif', background: '#fff', minHeight: '100vh', height: '100%' }} className="min-h-screen">
       {/* Toast Notification */}
       {notification && (
         <div 
@@ -1014,7 +1014,7 @@ ${creationShapes.map((shape, index) => {
       )}
       
       {/* Header */}
-      <div className="px-8 py-6" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
+      <div className="px-8 py-6 relative z-10" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img 
@@ -1078,7 +1078,7 @@ ${creationShapes.map((shape, index) => {
 
       <div className="flex" style={{ minHeight: 'calc(100vh - 85px)' }}>
         {/* Sidebar - Controls */}
-        <div className="w-72 p-6 overflow-auto" style={{ background: '#fff', boxShadow: '2px 0 8px rgba(0, 0, 0, 0.08)' }}>
+        <div className="w-72 p-6 overflow-auto relative z-10" style={{ background: '#fff', boxShadow: '2px 0 8px rgba(0, 0, 0, 0.08)' }}>
           {!selectedShape ? (
             activeTab === 'search' ? (
               <>
@@ -1441,7 +1441,7 @@ ${creationShapes.map((shape, index) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-6 overflow-auto">
+        <div className="flex-1 p-6 overflow-auto" style={{ background: '#fff', minHeight: '100%' }}>
           {selectedShape ? (
             <ShapeDetailView
               shape={selectedShape}
@@ -2218,6 +2218,15 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
     e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
     setSelectedId(shape.id);
+    // Bring selected shape to front
+    setCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shape.id);
+      if (index === -1 || index === prev.length - 1) return prev;
+      const newShapes = [...prev];
+      const [selected] = newShapes.splice(index, 1);
+      newShapes.push(selected);
+      return newShapes;
+    });
     setDragState({
       id: shape.id,
       offsetX: e.clientX - rect.left - shape.x,
@@ -3061,6 +3070,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'properties' or 'layers'
   const canvasRef = React.useRef(null);
 
   // Undo/Redo state - initialize with empty canvas state
@@ -3337,6 +3347,15 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
     e.stopPropagation();
     const rect = canvasRef.current.getBoundingClientRect();
     setSelectedId(shape.id);
+    // Bring selected shape to front
+    setCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shape.id);
+      if (index === -1 || index === prev.length - 1) return prev;
+      const newShapes = [...prev];
+      const [selected] = newShapes.splice(index, 1);
+      newShapes.push(selected);
+      return newShapes;
+    });
     setDragState({
       id: shape.id,
       offsetX: e.clientX - rect.left - shape.x,
@@ -3417,7 +3436,48 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
       setSelectedId(null);
     }
   };
-  
+
+  // Layer ordering functions
+  const bringToFront = (shapeId) => {
+    updateCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shapeId);
+      if (index === -1 || index === prev.length - 1) return prev;
+      const shape = prev[index];
+      const newShapes = [...prev.slice(0, index), ...prev.slice(index + 1), shape];
+      return newShapes;
+    });
+  };
+
+  const sendToBack = (shapeId) => {
+    updateCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shapeId);
+      if (index === -1 || index === 0) return prev;
+      const shape = prev[index];
+      const newShapes = [shape, ...prev.slice(0, index), ...prev.slice(index + 1)];
+      return newShapes;
+    });
+  };
+
+  const bringForward = (shapeId) => {
+    updateCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shapeId);
+      if (index === -1 || index === prev.length - 1) return prev;
+      const newShapes = [...prev];
+      [newShapes[index], newShapes[index + 1]] = [newShapes[index + 1], newShapes[index]];
+      return newShapes;
+    });
+  };
+
+  const sendBackward = (shapeId) => {
+    updateCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shapeId);
+      if (index === -1 || index === 0) return prev;
+      const newShapes = [...prev];
+      [newShapes[index], newShapes[index - 1]] = [newShapes[index - 1], newShapes[index]];
+      return newShapes;
+    });
+  };
+
   // Update selected shape property
   const updateSelectedShape = (property, value) => {
     updateCanvasShapes(prev => prev.map(s => 
@@ -3505,6 +3565,42 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold" style={{ color: '#000' }}>Create Custom Object</h2>
         <div className="flex gap-2 items-center">
+          {/* Layer Order Buttons - Only show when shape is selected */}
+          {selectedId && (() => {
+            const selectedIndex = canvasShapes.findIndex(s => s.id === selectedId);
+            const isAtFront = selectedIndex === canvasShapes.length - 1;
+            const isAtBack = selectedIndex === 0;
+            return (
+              <div className="flex items-center gap-1 mr-2">
+                <button
+                  onClick={() => bringForward(selectedId)}
+                  disabled={isAtFront}
+                  title="Bring Forward"
+                  className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+                  style={{ 
+                    background: isAtFront ? '#e5e7eb' : '#f3f4f6', 
+                    color: isAtFront ? '#9ca3af' : '#004aad',
+                    cursor: isAtFront ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <i className="fi fi-sr-bring-forward" style={{ fontSize: '16px' }}></i>
+                </button>
+                <button
+                  onClick={() => sendBackward(selectedId)}
+                  disabled={isAtBack}
+                  title="Send Backward"
+                  className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+                  style={{ 
+                    background: isAtBack ? '#e5e7eb' : '#f3f4f6', 
+                    color: isAtBack ? '#9ca3af' : '#004aad',
+                    cursor: isAtBack ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <i className="fi fi-sr-send-backward" style={{ fontSize: '16px' }}></i>
+                </button>
+              </div>
+            );
+          })()}
           {/* Undo/Redo Buttons */}
           <div className="flex items-center gap-1 mr-2">
             <button
@@ -3977,25 +4073,63 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
           </div>
         </div>
         
-        {/* Properties Panel */}
+        {/* Properties/Layers Panel */}
         <div className="w-64">
-          {selectedShape ? (
+          {/* Tab Buttons */}
+          <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: '#f3f4f6' }}>
+            <button
+              onClick={() => setRightPanelTab('properties')}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              style={{
+                background: rightPanelTab === 'properties' ? '#fff' : 'transparent',
+                color: rightPanelTab === 'properties' ? '#004aad' : '#666',
+                boxShadow: rightPanelTab === 'properties' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+              </svg>
+              Properties
+            </button>
+            <button
+              onClick={() => setRightPanelTab('layers')}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              style={{
+                background: rightPanelTab === 'layers' ? '#fff' : 'transparent',
+                color: rightPanelTab === 'layers' ? '#004aad' : '#666',
+                boxShadow: rightPanelTab === 'layers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+              Layers
+            </button>
+          </div>
+
+          {/* Properties Tab Content */}
+          {rightPanelTab === 'properties' && (
             <>
-              <h3 className="text-sm font-medium mb-4" style={{ color: '#000' }}>
-                {availableShapes.find(s => s.type === selectedShape.type)?.name || 'Shape'} Properties
-              </h3>
+              {selectedShape ? (
+                <>
+                  <h3 className="text-sm font-medium mb-4" style={{ color: '#000' }}>
+                    {availableShapes.find(s => s.type === selectedShape.type)?.name || 'Shape'} Properties
+                  </h3>
               
-              {/* Color */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Color</label>
-                <div className="flex items-center gap-2 mb-3">
-                  <div 
-                    className="relative w-8 h-8 rounded-lg overflow-hidden cursor-pointer flex-shrink-0"
-                    style={{ background: selectedShape.color }}
-                  >
-                    <input
-                      type="color"
-                      value={selectedShape.color}
+                  {/* Color */}
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Color</label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div 
+                        className="relative w-8 h-8 rounded-lg overflow-hidden cursor-pointer flex-shrink-0"
+                        style={{ background: selectedShape.color }}
+                      >
+                        <input
+                          type="color"
+                          value={selectedShape.color}
                       onChange={(e) => updateSelectedShape('color', e.target.value)}
                       className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
                     />
@@ -4274,15 +4408,89 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                 </svg>
                 Delete Shape
               </button>
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  <p className="text-xs" style={{ color: '#999' }}>Select a shape to edit its properties</p>
+                </div>
+              )}
             </>
-          ) : (
-            <div className="text-center py-8">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
-              <p className="text-xs" style={{ color: '#999' }}>Select a shape to edit its properties</p>
-            </div>
+          )}
+
+          {/* Layers Tab Content */}
+          {rightPanelTab === 'layers' && (
+            <>
+              <h3 className="text-sm font-medium mb-3" style={{ color: '#000' }}>Layers</h3>
+              {canvasShapes.length > 0 ? (
+                <div className="space-y-1 max-h-80 overflow-auto">
+                {[...canvasShapes].reverse().map((shape, index) => {
+                  const isSelected = shape.id === selectedId;
+                  const layerIndex = canvasShapes.length - 1 - index;
+                  const shapeName = availableShapes.find(s => s.type === shape.type)?.name || shape.type;
+                  return (
+                    <div
+                      key={shape.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all"
+                      style={{ 
+                        background: isSelected ? '#e0e7ff' : 'transparent',
+                        border: isSelected ? '1px solid #004aad' : '1px solid transparent'
+                      }}
+                      onClick={() => setSelectedId(shape.id)}
+                    >
+                      {/* Shape preview */}
+                      <div 
+                        className="w-6 h-6 rounded flex-shrink-0"
+                        style={{ 
+                          background: shape.color,
+                          clipPath: shape.type === 'circle' || shape.type === 'ellipse' ? 'none' : getClipPath(shape),
+                          borderRadius: shape.type === 'circle' || shape.type === 'ellipse' ? '50%' : getBorderRadius(shape, 24, 24)
+                        }}
+                      />
+                      <span className="text-xs flex-1 truncate" style={{ color: '#000' }}>
+                        {shape.type === 'text' ? `"${shape.text?.slice(0, 10) || 'Text'}${shape.text?.length > 10 ? '...' : ''}"` : shapeName}
+                      </span>
+                      {/* Layer controls */}
+                      {isSelected && (
+                        <div className="flex gap-0.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); bringForward(shape.id); }}
+                            className="p-1 rounded hover:bg-blue-100 transition-colors"
+                            title="Bring Forward"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2">
+                              <path d="M12 15V9M8 11l4-4 4 4" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); sendBackward(shape.id); }}
+                            className="p-1 rounded hover:bg-blue-100 transition-colors"
+                            title="Send Backward"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2">
+                              <path d="M12 9v6M8 13l4 4 4-4" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              ) : (
+                <div className="text-center py-8">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
+                  <p className="text-xs" style={{ color: '#999' }}>No layers yet. Add shapes to see them here.</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
