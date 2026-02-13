@@ -1128,8 +1128,8 @@ ${creationShapes.map((shape, index) => {
           />
         )}
         
-        {/* Sidebar - Controls */}
-        {(!isMobile || isMobileSidebarOpen) && (
+        {/* Sidebar - Controls (hidden on Create tab for desktop since ShapeCreator has its own sidebar) */}
+        {(!isMobile || isMobileSidebarOpen) && activeTab !== 'create' && (
         <div 
           className={`${isMobile ? 'fixed left-0 top-0 bottom-0 w-[280px] max-w-[85vw] z-50' : 'w-72'} p-4 md:p-6 overflow-auto`}
           style={{ background: '#fff', boxShadow: '2px 0 8px rgba(0, 0, 0, 0.08)' }}
@@ -1193,40 +1193,16 @@ ${creationShapes.map((shape, index) => {
                 </div>
               </>
             ) : activeTab === 'create' ? (
-              <div>
-                <label className="block text-xs font-medium uppercase tracking-wide mb-3" style={{ color: '#000' }}>Add Shapes</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(() => {
-                    const sidebarColors = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB'];
-                    const shapesList = [
-                      { type: 'rectangle', name: 'Rectangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="2" y="4" width="20" height="16" rx="2" /></svg> },
-                      { type: 'square', name: 'Square', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="3" y="3" width="18" height="18" rx="2" /></svg> },
-                      { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
-                      { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
-                      { type: 'triangle', name: 'Triangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
-                      { type: 'rightTriangle', name: 'Right Triangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="2,2 2,22 22,22" /></svg> },
-                      { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
-                      { type: 'pentagon', name: 'Pentagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,9 18,22 6,22 2,9" /></svg> },
-                      { type: 'hexagon', name: 'Hexagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="6,2 18,2 23,12 18,22 6,22 1,12" /></svg> },
-                      { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
-                      { type: 'arrow', name: 'Arrow', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12" /></svg> },
-                      { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
-                    ];
-                    return shapesList.map((shape, index) => (
-                      <button
-                        key={shape.type}
-                        onClick={() => addShapeToCanvasRef.current?.(shape.type)}
-                        className="flex flex-col items-center gap-1 p-3 rounded-lg transition-all hover:scale-105"
-                        style={{ background: '#fff', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)', cursor: 'pointer' }}
-                      >
-                        {shape.getIcon(sidebarColors[index % sidebarColors.length])}
-                        <span className="text-xs" style={{ color: '#000' }}>{shape.name}</span>
-                      </button>
-                    ));
-                  })()}
-                </div>
-                <p className="text-xs mt-4 text-center" style={{ color: '#666' }}>
-                  Click to add shapes to the canvas
+              <div className="text-center py-8">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-3">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M12 8v8M8 12h8" />
+                </svg>
+                <p className="text-sm" style={{ color: '#666' }}>
+                  Use the canvas area to create custom shapes
+                </p>
+                <p className="text-xs mt-2" style={{ color: '#999' }}>
+                  Add shapes from the left sidebar
                 </p>
               </div>
             ) : (
@@ -1767,7 +1743,11 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
           {isSaved && shape.isCreation && onUpdateCreation && (
             <button
               data-edit-creation-btn
-              onClick={() => setIsEditingCreation(true)}
+              onClick={() => {
+                // Ensure shapes are set before opening editor
+                setEditedShapes(shape.creationShapes || []);
+                setIsEditingCreation(true);
+              }}
               style={{ display: 'none' }}
             />
           )}
@@ -1884,8 +1864,8 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
               onUpdateCreation({ name: shape.name, creationShapes: newShapes });
               setIsEditingCreation(false);
             }}
-            onSaveAsNew={(newShapes) => {
-              const newName = `${shape.name} (Copy)`;
+            onSaveAsNew={(newShapes, customName) => {
+              const newName = customName || `${shape.name} (Copy)`;
               onSaveAsNew({ name: newName, shapes: newShapes });
               setIsEditingCreation(false);
             }}
@@ -2043,1411 +2023,52 @@ function ShapeGrid({ shapes, onSelect, renderShapePreview, isSavedCategory, onDe
   );
 }
 
-// Creation Editor Component - Edit existing canvas creations (matches ShapeCreator design)
+
+// Creation Editor Component - Thin wrapper around ShapeCreator for edit mode
 function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotification }) {
-  const [canvasShapes, setCanvasShapes] = useState(shapes.map((s, i) => ({ ...s, id: s.id || Date.now() + i })));
-  const [selectedId, setSelectedId] = useState(null);
-  const [dragState, setDragState] = useState(null);
-  const [copiedCSS, setCopiedCSS] = useState(false);
-  const [copiedHTML, setCopiedHTML] = useState(false);
-  const [snapToGrid, setSnapToGrid] = useState(false);
-  const [gridSize, setGridSize] = useState(20);
-  const [clipboardShape, setClipboardShape] = useState(null);
-  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'shapes' (mobile), 'properties' or 'layers'
-  const [editingLayerId, setEditingLayerId] = useState(null);
-  const [editingLayerName, setEditingLayerName] = useState('');
-  const [showBackConfirm, setShowBackConfirm] = useState(false);
-  const canvasRef = React.useRef(null);
-
-  // Check for mobile viewport
-  const [isMobile, setIsMobile] = useState(false);
-  React.useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      // Set default tab to 'shapes' on mobile if no shapes exist yet
-      if (mobile && canvasShapes.length === 0) {
-        setRightPanelTab('shapes');
-      }
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Undo/Redo history - initialize with the current shapes
-  const initialShapes = React.useMemo(() => shapes.map((s, i) => ({ ...s, id: s.id || Date.now() + i })), []);
-  const [history, setHistory] = useState([initialShapes]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-  const historyRef = React.useRef({ history: [initialShapes], index: 0 });
-
-  // Keep ref in sync
-  React.useEffect(() => {
-    historyRef.current = { history, index: historyIndex };
-  }, [history, historyIndex]);
-
-  // Save to history
-  const saveToHistory = React.useCallback((newShapes) => {
-    const { history: currentHistory, index: currentIndex } = historyRef.current;
-    const newHistory = currentHistory.slice(0, currentIndex + 1);
-    newHistory.push(newShapes.map(s => ({ ...s })));
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-    historyRef.current = { history: newHistory, index: newHistory.length - 1 };
-  }, []);
-
-  // Undo
-  const undo = React.useCallback(() => {
-    const { history: currentHistory, index: currentIndex } = historyRef.current;
-    if (currentIndex > 0) {
-      const newIndex = currentIndex - 1;
-      setHistoryIndex(newIndex);
-      setCanvasShapes(currentHistory[newIndex].map(s => ({ ...s })));
-      setSelectedId(null);
-      historyRef.current.index = newIndex;
-    }
-  }, []);
-
-  // Redo
-  const redo = React.useCallback(() => {
-    const { history: currentHistory, index: currentIndex } = historyRef.current;
-    if (currentIndex < currentHistory.length - 1) {
-      const newIndex = currentIndex + 1;
-      setHistoryIndex(newIndex);
-      setCanvasShapes(currentHistory[newIndex].map(s => ({ ...s })));
-      setSelectedId(null);
-      historyRef.current.index = newIndex;
-    }
-  }, []);
-
-  // Wrap setCanvasShapes to also save to history
-  const updateCanvasShapes = React.useCallback((updater, saveHistoryFlag = true) => {
-    setCanvasShapes(prev => {
-      const newShapes = typeof updater === 'function' ? updater(prev) : updater;
-      if (saveHistoryFlag) {
-        setTimeout(() => saveToHistory(newShapes), 0);
-      }
-      return newShapes;
-    });
-  }, [saveToHistory]);
-
-  // Snap value to grid
-  const snapValue = (value) => {
-    if (!snapToGrid) return value;
-    return Math.round(value / gridSize) * gridSize;
-  };
-
-  // Copy handlers
-  const copyCSS = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedCSS(true);
-      setTimeout(() => setCopiedCSS(false), 2000);
-    });
-  };
-
-  const copyHTML = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedHTML(true);
-      setTimeout(() => setCopiedHTML(false), 2000);
-    });
-  };
-
-  // Keyboard shortcuts
-  React.useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
-      const selectedShape = canvasShapes.find(s => s.id === selectedId);
-      
-      // Undo: Ctrl/Cmd + Z
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-        return;
-      }
-      
-      // Redo: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || e.key === 'y')) {
-        e.preventDefault();
-        redo();
-        return;
-      }
-      
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedShape) {
-        e.preventDefault();
-        updateCanvasShapes(prev => prev.filter(s => s.id !== selectedId));
-        setSelectedId(null);
-      }
-      
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && selectedShape) {
-        e.preventDefault();
-        setClipboardShape({ ...selectedShape });
-      }
-      
-      if ((e.ctrlKey || e.metaKey) && e.key === 'x' && selectedShape) {
-        e.preventDefault();
-        setClipboardShape({ ...selectedShape });
-        updateCanvasShapes(prev => prev.filter(s => s.id !== selectedId));
-        setSelectedId(null);
-      }
-      
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v' && clipboardShape) {
-        e.preventDefault();
-        const newShape = {
-          ...clipboardShape,
-          id: Date.now(),
-          x: clipboardShape.x + 20,
-          y: clipboardShape.y + 20
-        };
-        updateCanvasShapes(prev => [...prev, newShape]);
-        setSelectedId(newShape.id);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedId, canvasShapes, clipboardShape, historyIndex, history]);
-
-  // Get clip-path for shape type
-  const getClipPath = (shape) => {
-    const type = typeof shape === 'string' ? shape : shape.type;
-    const curve = typeof shape === 'object' ? (shape.curve || 0) : 0;
-    
-    // If curve is applied, use rounded polygon via SVG path
-    if (curve > 0 && ['triangle', 'rightTriangle', 'diamond', 'star'].includes(type)) {
-      const points = {
-        triangle: [[50, 0], [100, 100], [0, 100]],
-        rightTriangle: [[0, 0], [0, 100], [100, 100]],
-        diamond: [[50, 0], [100, 50], [50, 100], [0, 50]],
-        star: [[50, 0], [61, 35], [98, 35], [68, 57], [79, 91], [50, 70], [21, 91], [32, 57], [2, 35], [39, 35]]
-      }[type];
-      
-      if (points) {
-        const radius = curve * 0.3;
-        let path = '';
-        const n = points.length;
-        
-        for (let i = 0; i < n; i++) {
-          const prev = points[(i - 1 + n) % n];
-          const curr = points[i];
-          const next = points[(i + 1) % n];
-          
-          const v1 = [prev[0] - curr[0], prev[1] - curr[1]];
-          const v2 = [next[0] - curr[0], next[1] - curr[1]];
-          
-          const len1 = Math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]);
-          const len2 = Math.sqrt(v2[0] * v2[0] + v2[1] * v2[1]);
-          
-          const maxR = Math.min(len1, len2) * 0.4;
-          const r = Math.min(radius, maxR);
-          
-          const start = [curr[0] + (v1[0] / len1) * r, curr[1] + (v1[1] / len1) * r];
-          const end = [curr[0] + (v2[0] / len2) * r, curr[1] + (v2[1] / len2) * r];
-          
-          if (i === 0) {
-            path += `M ${start[0]} ${start[1]} `;
-          } else {
-            path += `L ${start[0]} ${start[1]} `;
-          }
-          path += `Q ${curr[0]} ${curr[1]} ${end[0]} ${end[1]} `;
-        }
-        path += 'Z';
-        return `path('${path}')`;
-      }
-    }
-    
-    switch (type) {
-      case 'triangle': return 'polygon(50% 0%, 100% 100%, 0% 100%)';
-      case 'rightTriangle': return 'polygon(0% 0%, 0% 100%, 100% 100%)';
-      case 'diamond': return 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)';
-      case 'pentagon': return 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)';
-      case 'hexagon': return 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
-      case 'star': return 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
-      case 'arrow': return 'polygon(50% 0%, 100% 50%, 70% 50%, 70% 100%, 30% 100%, 30% 50%, 0% 50%)';
-      default: return 'none';
-    }
-  };
-
-  // Get border-radius for shape type
-  const getBorderRadius = (shape, width, height) => {
-    const type = typeof shape === 'string' ? shape : shape.type;
-    const borderRadius = typeof shape === 'object' ? shape.borderRadius : undefined;
-    
-    switch (type) {
-      case 'circle': case 'ellipse': return '50%';
-      case 'rectangle': case 'square': 
-        return borderRadius !== undefined ? `${borderRadius}px` : '4px';
-      default: return '0';
-    }
-  };
-
-  // Add shape to canvas
-  const addShapeToCanvas = (shapeType) => {
-    const newShape = {
-      id: Date.now(),
-      type: shapeType,
-      x: 200 + Math.random() * 100,
-      y: 150 + Math.random() * 100,
-      width: shapeType === 'ellipse' ? 120 : shapeType === 'text' ? 150 : 80,
-      height: shapeType === 'ellipse' ? 60 : shapeType === 'rectangle' ? 50 : shapeType === 'text' ? 40 : 80,
-      color: '#004aad',
-      opacity: 100,
-      rotation: 0,
-      flipX: false,
-      flipY: false,
-      ...(shapeType === 'text' && {
-        text: 'Text',
-        fontSize: 24,
-        fontFamily: 'Arial',
-        fontWeight: 'normal',
-        fontStyle: 'normal',
-        textAlign: 'center'
-      })
-    };
-    updateCanvasShapes(prev => [...prev, newShape]);
-    setSelectedId(newShape.id);
-  };
-
-  // Handle mouse down on canvas shape
-  const handleShapeMouseDown = (e, shape, resizing = false) => {
-    e.stopPropagation();
-    const rect = canvasRef.current.getBoundingClientRect();
-    setSelectedId(shape.id);
-    setDragState({
-      id: shape.id,
-      offsetX: e.clientX - rect.left - shape.x,
-      offsetY: e.clientY - rect.top - shape.y,
-      type: resizing ? 'resize' : 'move',
-      startWidth: shape.width,
-      startHeight: shape.height,
-      startX: e.clientX,
-      startY: e.clientY
-    });
-  };
-
-  // Handle mouse move
-  const handleCanvasMouseMove = React.useCallback((e) => {
-    if (!dragState) return;
-    
-    if (dragState.type === 'move') {
-      const rect = canvasRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      let newX = Math.max(0, Math.min(rect.width - 20, e.clientX - rect.left - dragState.offsetX));
-      let newY = Math.max(0, Math.min(rect.height - 20, e.clientY - rect.top - dragState.offsetY));
-      
-      newX = snapValue(newX);
-      newY = snapValue(newY);
-      
-      setCanvasShapes(prev => prev.map(s => 
-        s.id === dragState.id ? { ...s, x: newX, y: newY } : s
-      ));
-    } else if (dragState.type === 'resize') {
-      const deltaX = e.clientX - dragState.startX;
-      const deltaY = e.clientY - dragState.startY;
-      let newWidth = Math.max(20, dragState.startWidth + deltaX);
-      let newHeight = Math.max(20, dragState.startHeight + deltaY);
-      
-      newWidth = snapValue(newWidth);
-      newHeight = snapValue(newHeight);
-      
-      setCanvasShapes(prev => prev.map(s => 
-        s.id === dragState.id ? { ...s, width: newWidth, height: newHeight } : s
-      ));
-    }
-  }, [dragState, snapToGrid, gridSize]);
-
-  const handleCanvasMouseUp = React.useCallback(() => {
-    if (dragState) {
-      // Save to history after drag/resize ends
-      setCanvasShapes(current => {
-        saveToHistory(current);
-        return current;
-      });
-    }
-    setDragState(null);
-  }, [dragState]);
-
-  // Global mouse event listeners
-  React.useEffect(() => {
-    if (dragState) {
-      const handleGlobalMouseMove = (e) => handleCanvasMouseMove(e);
-      const handleGlobalMouseUp = () => handleCanvasMouseUp();
-      
-      document.addEventListener('mousemove', handleGlobalMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleGlobalMouseMove);
-        document.removeEventListener('mouseup', handleGlobalMouseUp);
-      };
-    }
-  }, [dragState, handleCanvasMouseMove, handleCanvasMouseUp]);
-
-  const deleteSelectedShape = () => {
-    if (selectedId) {
-      updateCanvasShapes(prev => prev.filter(s => s.id !== selectedId));
-      setSelectedId(null);
-    }
-  };
-
-  const bringForward = (shapeId) => {
-    updateCanvasShapes(prev => {
-      const index = prev.findIndex(s => s.id === shapeId);
-      if (index === -1 || index === prev.length - 1) return prev;
-      const newShapes = [...prev];
-      [newShapes[index], newShapes[index + 1]] = [newShapes[index + 1], newShapes[index]];
-      return newShapes;
-    });
-  };
-
-  const sendBackward = (shapeId) => {
-    updateCanvasShapes(prev => {
-      const index = prev.findIndex(s => s.id === shapeId);
-      if (index === -1 || index === 0) return prev;
-      const newShapes = [...prev];
-      [newShapes[index], newShapes[index - 1]] = [newShapes[index - 1], newShapes[index]];
-      return newShapes;
-    });
-  };
-
-  const updateSelectedShape = (property, value) => {
-    updateCanvasShapes(prev => prev.map(s => 
-      s.id === selectedId ? { ...s, [property]: value } : s
-    ));
-  };
-
-  const selectedShape = canvasShapes.find(s => s.id === selectedId);
-
-  const clearCanvas = () => {
-    updateCanvasShapes([]);
-    setSelectedId(null);
-  };
-
-  // Generate CSS
-  const generateCanvasCSS = () => {
-    if (canvasShapes.length === 0) return '/* Add shapes to the canvas to generate CSS */';
-    
-    return canvasShapes.map((shape, index) => {
-      const className = `shape-${index + 1}`;
-      let css = `.${className} {\n`;
-      css += `  position: absolute;\n`;
-      css += `  left: ${Math.round(shape.x)}px;\n`;
-      css += `  top: ${Math.round(shape.y)}px;\n`;
-      css += `  width: ${Math.round(shape.width)}px;\n`;
-      css += `  height: ${Math.round(shape.height)}px;\n`;
-      
-      if (shape.type === 'text') {
-        css += `  color: ${shape.color};\n`;
-        css += `  font-size: ${shape.fontSize || 24}px;\n`;
-        css += `  font-family: ${shape.fontFamily || 'Arial'};\n`;
-        css += `  font-weight: ${shape.fontWeight || 'normal'};\n`;
-        css += `  font-style: ${shape.fontStyle || 'normal'};\n`;
-        css += `  display: flex;\n`;
-        css += `  align-items: center;\n`;
-        css += `  justify-content: center;\n`;
-      } else {
-        css += `  background: ${shape.color};\n`;
-        const clipPath = getClipPath(shape);
-        if (clipPath !== 'none') {
-          css += `  clip-path: ${clipPath};\n`;
-        } else {
-          css += `  border-radius: ${getBorderRadius(shape)};\n`;
-        }
-      }
-      
-      const transforms = [];
-      if (shape.rotation !== 0) transforms.push(`rotate(${shape.rotation}deg)`);
-      if (shape.flipX) transforms.push('scaleX(-1)');
-      if (shape.flipY) transforms.push('scaleY(-1)');
-      if (transforms.length > 0) {
-        css += `  transform: ${transforms.join(' ')};\n`;
-      }
-      
-      // Add opacity
-      if (shape.opacity !== undefined && shape.opacity !== 100) {
-        css += `  opacity: ${shape.opacity / 100};\n`;
-      }
-      
-      css += `}`;
-      return css;
-    }).join('\n\n');
-  };
-
-  // Generate HTML
-  const generateCanvasHTML = () => {
-    if (canvasShapes.length === 0) return '<!-- Add shapes to the canvas -->';
-    
-    return `<div class="canvas-container" style="position: relative; width: 600px; height: 400px;">\n` +
-      canvasShapes.map((shape, index) => {
-        if (shape.type === 'text') {
-          return `  <div class="shape-${index + 1}">${shape.text || 'Text'}</div>`;
-        }
-        return `  <div class="shape-${index + 1}"></div>`;
-      }).join('\n') +
-      `\n</div>`;
-  };
-
-  // Available shapes list
-  const availableShapes = [
-    { type: 'rectangle', name: 'Rectangle' },
-    { type: 'square', name: 'Square' },
-    { type: 'circle', name: 'Circle' },
-    { type: 'ellipse', name: 'Ellipse' },
-    { type: 'triangle', name: 'Triangle' },
-    { type: 'rightTriangle', name: 'Right Triangle' },
-    { type: 'diamond', name: 'Diamond' },
-    { type: 'pentagon', name: 'Pentagon' },
-    { type: 'hexagon', name: 'Hexagon' },
-    { type: 'star', name: 'Star' },
-    { type: 'arrow', name: 'Arrow' },
-    { type: 'text', name: 'Text' },
-  ];
-
+  // Use key to force remount when shapes change (ensures state is initialized correctly)
+  const key = React.useMemo(() => JSON.stringify(shapes.map(s => s.id || s.type)), [shapes]);
+  
   return (
-    <div className="p-3 md:p-6">
-      {/* Back Confirmation Dialog */}
-      {showBackConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: '#000' }}>Leave Editor?</h3>
-            <p className="text-sm mb-6" style={{ color: '#666' }}>
-              Are you sure you want to go back? Any unsaved changes will be lost.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowBackConfirm(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: '#f3f4f6', color: '#000' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowBackConfirm(false);
-                  onBack();
-                }}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: '#dc2626', color: '#fff' }}
-              >
-                Leave
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
-        <div className="flex items-center gap-2 md:gap-4">
-          <button
-            onClick={() => setShowBackConfirm(true)}
-            className="flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium transition-colors"
-            style={{ color: '#004aad' }}
-          >
-            <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-          <h2 className="text-base md:text-xl font-semibold" style={{ color: '#000' }}>Edit Creation</h2>
-        </div>
-        <div className="flex flex-wrap gap-1 md:gap-2 items-center">
-          {/* Undo/Redo Buttons */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={undo}
-              disabled={historyIndex <= 0}
-              title="Undo (Ctrl+Z)"
-              className="p-1.5 md:p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
-              style={{ 
-                background: historyIndex <= 0 ? '#e5e7eb' : '#f3f4f6',
-                color: historyIndex <= 0 ? '#9ca3af' : '#004aad',
-                cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <i className="fas fa-undo" style={{ fontSize: '12px' }}></i>
-            </button>
-            <button
-              onClick={redo}
-              disabled={historyIndex >= history.length - 1}
-              title="Redo (Ctrl+Shift+Z)"
-              className="p-1.5 md:p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
-              style={{ 
-                background: historyIndex >= history.length - 1 ? '#e5e7eb' : '#f3f4f6',
-                color: historyIndex >= history.length - 1 ? '#9ca3af' : '#004aad',
-                cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <i className="fas fa-redo" style={{ fontSize: '12px' }}></i>
-            </button>
-          </div>
-          {/* Grid Snap Toggle */}
-          <button
-            onClick={() => setSnapToGrid(!snapToGrid)}
-            className="p-1.5 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
-            style={{ 
-              background: snapToGrid ? '#004aad' : '#f3f4f6',
-              color: snapToGrid ? '#fff' : '#666'
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-            </svg>
-            <span className="hidden md:inline">Snap</span>
-          </button>
-          <button
-            onClick={() => {
-              if (canvasShapes.length === 0) {
-                showNotification('Add at least one shape', 'error');
-                return;
-              }
-              onOverwrite(canvasShapes);
-            }}
-            className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
-            style={{ background: '#004aad', color: '#fff' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <polyline points="17,21 17,13 7,13 7,21" />
-              <polyline points="7,3 7,8 15,8" />
-            </svg>
-            <span className="hidden sm:inline">Save</span>
-          </button>
-          <button
-            onClick={() => {
-              if (canvasShapes.length === 0) {
-                showNotification('Add at least one shape', 'error');
-                return;
-              }
-              onSaveAsNew(canvasShapes);
-            }}
-            className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
-            style={{ background: '#ffde59', color: '#000' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span className="hidden sm:inline">New</span>
-          </button>
-          <button
-            onClick={clearCanvas}
-            className="p-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
-            style={{ background: '#fee2e2', color: '#dc2626' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-            </svg>
-            <span className="hidden md:inline">Clear</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
-        {/* Left Sidebar - Add Shapes (Desktop only) */}
-        {!isMobile && (
-        <div className="w-48 flex-shrink-0">
-          <label className="block text-xs font-medium uppercase tracking-wide mb-3" style={{ color: '#000' }}>Add Shapes</label>
-          <div className="grid grid-cols-2 gap-2">
-            {(() => {
-              const sidebarColors = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB'];
-              const shapesList = [
-                { type: 'rectangle', name: 'Rectangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="2" y="4" width="20" height="16" rx="2" /></svg> },
-                { type: 'square', name: 'Square', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="3" y="3" width="18" height="18" rx="2" /></svg> },
-                { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
-                { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
-                { type: 'triangle', name: 'Triangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
-                { type: 'rightTriangle', name: 'Right Triangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="2,2 2,22 22,22" /></svg> },
-                { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
-                { type: 'pentagon', name: 'Pentagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,9 18,22 6,22 2,9" /></svg> },
-                { type: 'hexagon', name: 'Hexagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="6,2 18,2 23,12 18,22 6,22 1,12" /></svg> },
-                { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
-                { type: 'arrow', name: 'Arrow', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12" /></svg> },
-                { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
-              ];
-              return shapesList.map((shape, index) => (
-                <button
-                  key={shape.type}
-                  onClick={() => addShapeToCanvas(shape.type)}
-                  className="flex flex-col items-center gap-1 p-3 rounded-lg transition-all hover:scale-105"
-                  style={{ background: '#fff', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)', cursor: 'pointer' }}
-                >
-                  {shape.getIcon(sidebarColors[index % sidebarColors.length])}
-                  <span className="text-xs" style={{ color: '#000' }}>{shape.name}</span>
-                </button>
-              ));
-            })()}
-          </div>
-          <p className="text-xs mt-4 text-center" style={{ color: '#666' }}>
-            Click to add shapes to the canvas
-          </p>
-        </div>
-        )}
-
-        {/* Canvas */}
-        <div className="flex-1 order-1 lg:order-none">
-          <div 
-            ref={canvasRef}
-            className="relative rounded-2xl overflow-hidden cursor-crosshair touch-none"
-            style={{ 
-              width: '100%', 
-              height: isMobile ? 'min(400px, 50vh)' : '650px',
-              minHeight: '250px',
-              background: '#fff',
-              boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)',
-              border: '2px dashed #e5e7eb'
-            }}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseUp={handleCanvasMouseUp}
-            onMouseLeave={handleCanvasMouseUp}
-            onTouchStart={(e) => {
-              if (e.touches.length === 1) {
-                const touch = e.touches[0];
-                const canvas = canvasRef.current;
-                if (canvas) {
-                  const rect = canvas.getBoundingClientRect();
-                  const x = touch.clientX - rect.left;
-                  const y = touch.clientY - rect.top;
-                  for (let i = canvasShapes.length - 1; i >= 0; i--) {
-                    const s = canvasShapes[i];
-                    if (x >= s.x && x <= s.x + s.width && y >= s.y && y <= s.y + s.height) {
-                      setSelectedId(s.id);
-                      setDragState({
-                        id: s.id,
-                        type: 'move',
-                        offsetX: x - s.x,
-                        offsetY: y - s.y
-                      });
-                      return;
-                    }
-                  }
-                }
-              }
-            }}
-            onTouchMove={(e) => {
-              if (dragState && e.touches.length === 1) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                handleCanvasMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
-              }
-            }}
-            onTouchEnd={() => handleCanvasMouseUp()}
-            onClick={() => setSelectedId(null)}
-          >
-            {/* Grid */}
-            <div className="absolute inset-0 pointer-events-none" style={{
-              backgroundImage: 'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
-              backgroundSize: `${gridSize}px ${gridSize}px`
-            }} />
-            
-            {/* Shapes */}
-            {canvasShapes.map((shape, index) => {
-              const flipTransform = [
-                shape.flipX ? 'scaleX(-1)' : '',
-                shape.flipY ? 'scaleY(-1)' : ''
-              ].filter(Boolean).join(' ');
-              
-              return (
-                <div
-                  key={shape.id}
-                  className="absolute cursor-move"
-                  style={{
-                    left: shape.x,
-                    top: shape.y,
-                    width: shape.width,
-                    height: shape.height,
-                    zIndex: index + 1,
-                    transform: shape.rotation !== 0 ? `rotate(${shape.rotation}deg)` : 'none'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedId(shape.id);
-                  }}
-                  onMouseDown={(e) => handleShapeMouseDown(e, shape)}
-                >
-                  {shape.type === 'text' ? (
-                    <div
-                      className="pointer-events-none"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        color: shape.color,
-                        opacity: (shape.opacity ?? 100) / 100,
-                        fontSize: `${shape.fontSize || 24}px`,
-                        fontFamily: shape.fontFamily || 'Arial, sans-serif',
-                        fontWeight: shape.fontWeight || 'normal',
-                        fontStyle: shape.fontStyle || 'normal',
-                        textAlign: shape.textAlign || 'left',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: shape.textAlign === 'center' ? 'center' : shape.textAlign === 'right' ? 'flex-end' : 'flex-start',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        overflow: 'hidden',
-                        transform: flipTransform || 'none'
-                      }}
-                    >
-                      {shape.text || 'Text'}
-                    </div>
-                  ) : (
-                    <div
-                      className="pointer-events-none"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        background: shape.color,
-                        opacity: (shape.opacity ?? 100) / 100,
-                        clipPath: getClipPath(shape),
-                        borderRadius: getBorderRadius(shape),
-                        transform: flipTransform || 'none'
-                      }}
-                    />
-                  )}
-                </div>
-              );
-            })}
-            
-            {/* Selection overlay - renders on top */}
-            {selectedId && (() => {
-              const shape = canvasShapes.find(s => s.id === selectedId);
-              if (!shape) return null;
-              return (
-                <div
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: shape.x,
-                    top: shape.y,
-                    width: shape.width,
-                    height: shape.height,
-                    outline: '2px solid #004aad',
-                    outlineOffset: '2px',
-                    zIndex: 1000,
-                    transform: shape.rotation !== 0 ? `rotate(${shape.rotation}deg)` : 'none'
-                  }}
-                >
-                  {/* Resize handle */}
-                  <div
-                    className="absolute w-4 h-4 rounded-full cursor-se-resize pointer-events-auto"
-                    style={{
-                      right: -8,
-                      bottom: -8,
-                      background: '#004aad',
-                      border: '2px solid #fff',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setDragState({
-                        id: shape.id,
-                        type: 'resize',
-                        startWidth: shape.width,
-                        startHeight: shape.height,
-                        startX: e.clientX,
-                        startY: e.clientY
-                      });
-                    }}
-                  />
-                  {/* Corner indicators */}
-                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, left: -5 }} />
-                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ top: -5, right: -5 }} />
-                  <div className="absolute w-2 h-2 bg-white border-2 border-blue-600 rounded-sm" style={{ bottom: -5, left: -5 }} />
-                </div>
-              );
-            })()}
-            
-            {/* Empty state */}
-            {canvasShapes.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center">
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M12 8v8M8 12h8" />
-                  </svg>
-                  <p className="text-sm" style={{ color: '#999' }}>Add shapes from the sidebar</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Properties/Layers Panel */}
-        <div className={`${isMobile ? 'w-full order-2' : 'w-64'}`}>
-          {/* Tab Buttons */}
-          <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: '#f3f4f6' }}>
-            {/* Shapes Tab - Mobile Only */}
-            {isMobile && (
-              <button
-                onClick={() => setRightPanelTab('shapes')}
-                className="flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
-                style={{
-                  background: rightPanelTab === 'shapes' ? '#fff' : 'transparent',
-                  color: rightPanelTab === 'shapes' ? '#004aad' : '#666',
-                  boxShadow: rightPanelTab === 'shapes' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Shapes
-              </button>
-            )}
-            <button
-              onClick={() => setRightPanelTab('properties')}
-              className="flex-1 px-2 md:px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 md:gap-1.5"
-              style={{
-                background: rightPanelTab === 'properties' ? '#fff' : 'transparent',
-                color: rightPanelTab === 'properties' ? '#004aad' : '#666',
-                boxShadow: rightPanelTab === 'properties' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-              </svg>
-              {isMobile ? 'Props' : 'Properties'}
-            </button>
-            <button
-              onClick={() => setRightPanelTab('layers')}
-              className="flex-1 px-2 md:px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 md:gap-1.5"
-              style={{
-                background: rightPanelTab === 'layers' ? '#fff' : 'transparent',
-                color: rightPanelTab === 'layers' ? '#004aad' : '#666',
-                boxShadow: rightPanelTab === 'layers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
-              Layers
-            </button>
-          </div>
-
-          {/* Shapes Tab Content - Mobile Only */}
-          {isMobile && rightPanelTab === 'shapes' && (
-            <div className="mb-4">
-              <div className="grid grid-cols-4 gap-2">
-                {(() => {
-                  const sidebarColors = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB'];
-                  const shapesList = [
-                    { type: 'rectangle', name: 'Rect', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="2" y="4" width="20" height="16" rx="2" /></svg> },
-                    { type: 'square', name: 'Square', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="3" y="3" width="18" height="18" rx="2" /></svg> },
-                    { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
-                    { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
-                    { type: 'triangle', name: 'Tri', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
-                    { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
-                    { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
-                    { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
-                  ];
-                  return shapesList.map((shape, index) => (
-                    <button
-                      key={shape.type}
-                      onClick={() => addShapeToCanvas(shape.type)}
-                      className="flex flex-col items-center gap-1 p-3 rounded-lg transition-all active:scale-95"
-                      style={{ background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
-                    >
-                      {shape.getIcon(sidebarColors[index % sidebarColors.length])}
-                      <span className="text-xs" style={{ color: '#000' }}>{shape.name}</span>
-                    </button>
-                  ));
-                })()}
-              </div>
-              <p className="text-xs mt-3 text-center" style={{ color: '#666' }}>Tap a shape to add it to the canvas</p>
-            </div>
-          )}
-
-          {/* Properties Tab Content */}
-          {rightPanelTab === 'properties' && (
-            <>
-          {selectedShape ? (
-            <>
-              <h3 className="text-sm font-medium mb-4" style={{ color: '#000' }}>
-                {availableShapes.find(s => s.type === selectedShape.type)?.name || 'Shape'} Properties
-              </h3>
-              
-              {/* Color */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Color</label>
-                <div className="flex items-center gap-2 mb-3">
-                  <div 
-                    className="relative w-8 h-8 rounded-lg overflow-hidden cursor-pointer flex-shrink-0"
-                    style={{ background: selectedShape.color }}
-                  >
-                    <input
-                      type="color"
-                      value={selectedShape.color}
-                      onChange={(e) => updateSelectedShape('color', e.target.value)}
-                      className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={selectedShape.color}
-                    onChange={(e) => updateSelectedShape('color', e.target.value)}
-                    className="flex-1 px-2 py-1 rounded text-xs font-mono"
-                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB', '#2EC4B6', '#F1FAEE', '#A8DADC', '#457B9D', '#1D3557'].map(c => (
-                    <button
-                      key={c}
-                      onClick={() => updateSelectedShape('color', c)}
-                      className="w-5 h-5 rounded transition-transform hover:scale-110"
-                      style={{ 
-                        background: c,
-                        border: c === '#F1FAEE' ? '1px solid #ccc' : 'none',
-                        boxShadow: selectedShape.color === c ? '0 0 0 2px white, 0 0 0 3px ' + c : 'none'
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-              
-              {/* Opacity Slider */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
-                  Opacity: {selectedShape.opacity ?? 100}%
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={selectedShape.opacity ?? 100}
-                  onChange={(e) => updateSelectedShape('opacity', Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ 
-                    background: `linear-gradient(to right, ${selectedShape.color}00 0%, ${selectedShape.color} 100%)`, 
-                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
-                    '--thumb-color': selectedShape.color
-                  }}
-                />
-              </div>
-              
-              {/* Text Properties */}
-              {selectedShape.type === 'text' && (
-                <>
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Text Content</label>
-                    <input
-                      type="text"
-                      value={selectedShape.text || 'Text'}
-                      onChange={(e) => updateSelectedShape('text', e.target.value)}
-                      className="w-full px-2 py-1.5 rounded text-sm"
-                      style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                    />
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Font Size: {selectedShape.fontSize || 24}px</label>
-                    <input
-                      type="range"
-                      min="8"
-                      max="72"
-                      value={selectedShape.fontSize || 24}
-                      onChange={(e) => updateSelectedShape('fontSize', Number(e.target.value))}
-                      className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                      style={{ background: `linear-gradient(to right, #004aad ${((selectedShape.fontSize || 24) - 8) / 64 * 100}%, #e5e7eb ${((selectedShape.fontSize || 24) - 8) / 64 * 100}%)` }}
-                    />
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Font Family</label>
-                    <select
-                      value={selectedShape.fontFamily || 'Arial'}
-                      onChange={(e) => updateSelectedShape('fontFamily', e.target.value)}
-                      className="w-full px-2 py-1.5 rounded text-sm"
-                      style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                    >
-                      <option value="Arial">Arial</option>
-                      <option value="Helvetica">Helvetica</option>
-                      <option value="Times New Roman">Times New Roman</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Courier New">Courier New</option>
-                      <option value="Verdana">Verdana</option>
-                    </select>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Font Style</label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => updateSelectedShape('fontWeight', selectedShape.fontWeight === 'bold' ? 'normal' : 'bold')}
-                        className="flex-1 px-3 py-1.5 rounded text-sm font-bold transition-all"
-                        style={{ 
-                          background: selectedShape.fontWeight === 'bold' ? '#004aad' : '#f8f9fa',
-                          color: selectedShape.fontWeight === 'bold' ? '#fff' : '#000',
-                          border: '1px solid #e5e7eb'
-                        }}
-                      >
-                        B
-                      </button>
-                      <button
-                        onClick={() => updateSelectedShape('fontStyle', selectedShape.fontStyle === 'italic' ? 'normal' : 'italic')}
-                        className="flex-1 px-3 py-1.5 rounded text-sm italic transition-all"
-                        style={{ 
-                          background: selectedShape.fontStyle === 'italic' ? '#004aad' : '#f8f9fa',
-                          color: selectedShape.fontStyle === 'italic' ? '#fff' : '#000',
-                          border: '1px solid #e5e7eb'
-                        }}
-                      >
-                        I
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-              
-              {/* Size */}
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Width</label>
-                  <input
-                    type="number"
-                    min="20"
-                    value={Math.round(selectedShape.width)}
-                    onChange={(e) => updateSelectedShape('width', Number(e.target.value))}
-                    className="w-full px-2 py-1 rounded text-xs"
-                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Height</label>
-                  <input
-                    type="number"
-                    min="20"
-                    value={Math.round(selectedShape.height)}
-                    onChange={(e) => updateSelectedShape('height', Number(e.target.value))}
-                    className="w-full px-2 py-1 rounded text-xs"
-                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                  />
-                </div>
-              </div>
-              
-              {/* Rotation */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Rotation: {selectedShape.rotation || 0}°</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  value={selectedShape.rotation || 0}
-                  onChange={(e) => updateSelectedShape('rotation', Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.rotation || 0) / 360 * 100}%, #e5e7eb ${(selectedShape.rotation || 0) / 360 * 100}%)` }}
-                />
-              </div>
-              
-              {/* Flip */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Flip</label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => updateSelectedShape('flipX', !selectedShape.flipX)}
-                    className="flex-1 px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center justify-center gap-1"
-                    style={{ 
-                      background: selectedShape.flipX ? '#004aad' : '#f8f9fa',
-                      color: selectedShape.flipX ? '#fff' : '#000',
-                      border: '1px solid #e5e7eb'
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 3v18M16 6l5 6-5 6M8 6l-5 6 5 6" />
-                    </svg>
-                    H
-                  </button>
-                  <button
-                    onClick={() => updateSelectedShape('flipY', !selectedShape.flipY)}
-                    className="flex-1 px-3 py-1.5 rounded text-xs font-medium transition-all flex items-center justify-center gap-1"
-                    style={{ 
-                      background: selectedShape.flipY ? '#004aad' : '#f8f9fa',
-                      color: selectedShape.flipY ? '#fff' : '#000',
-                      border: '1px solid #e5e7eb'
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 12h18M6 8l6-5 6 5M6 16l6 5 6-5" />
-                    </svg>
-                    V
-                  </button>
-                </div>
-              </div>
-              
-              {/* Shape-specific Controls - Border Radius for rectangles/squares */}
-              {(selectedShape.type === 'rectangle' || selectedShape.type === 'square') && (
-                <div className="mb-4">
-                  <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
-                    Corner Radius: {selectedShape.borderRadius || 0}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    value={selectedShape.borderRadius || 0}
-                    onChange={(e) => updateSelectedShape('borderRadius', Number(e.target.value))}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                    style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.borderRadius || 0) / 50 * 100}%, #e5e7eb ${(selectedShape.borderRadius || 0) / 50 * 100}%)` }}
-                  />
-                </div>
-              )}
-              
-              {/* Shape-specific Controls - Corner Curve for triangle, rightTriangle, diamond, star */}
-              {(selectedShape.type === 'triangle' || selectedShape.type === 'rightTriangle' || selectedShape.type === 'diamond' || selectedShape.type === 'star') && (
-                <div className="mb-4">
-                  <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>
-                    Corner Curve: {selectedShape.curve || 0}
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={selectedShape.curve || 0}
-                    onChange={(e) => updateSelectedShape('curve', Number(e.target.value))}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                    style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.curve || 0)}%, #e5e7eb ${(selectedShape.curve || 0)}%)` }}
-                  />
-                </div>
-              )}
-              
-              {/* Position */}
-              <div className="mb-4 grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>X</label>
-                  <input
-                    type="number"
-                    value={Math.round(selectedShape.x)}
-                    onChange={(e) => updateSelectedShape('x', Number(e.target.value))}
-                    className="w-full px-2 py-1 rounded text-xs"
-                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Y</label>
-                  <input
-                    type="number"
-                    value={Math.round(selectedShape.y)}
-                    onChange={(e) => updateSelectedShape('y', Number(e.target.value))}
-                    className="w-full px-2 py-1 rounded text-xs"
-                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
-                  />
-                </div>
-              </div>
-              
-              {/* Delete */}
-              <button
-                onClick={deleteSelectedShape}
-                className="w-full px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2"
-                style={{ background: '#fee2e2', color: '#dc2626' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                </svg>
-                Delete Shape
-              </button>
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-xs" style={{ color: '#999' }}>Select a shape to edit its properties</p>
-            </div>
-          )}
-            </>
-          )}
-
-          {/* Layers Tab Content */}
-          {rightPanelTab === 'layers' && (
-            <>
-              <h3 className="text-sm font-medium mb-3" style={{ color: '#000' }}>Layers</h3>
-              <div 
-                className="rounded-xl p-3 overflow-auto"
-                style={{ 
-                  background: '#f8f9fa', 
-                  boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
-                  height: '520px'
-                }}
-              >
-                {canvasShapes.length > 0 ? (
-                  <div className="space-y-1">
-                  {[...canvasShapes].reverse().map((shape, index) => {
-                    const isSelected = shape.id === selectedId;
-                    const layerIndex = canvasShapes.length - 1 - index;
-                    const defaultName = shape.type === 'text' 
-                      ? `"${shape.text?.slice(0, 10) || 'Text'}${shape.text?.length > 10 ? '...' : ''}"` 
-                      : availableShapes.find(s => s.type === shape.type)?.name || shape.type;
-                    const displayName = shape.layerName || defaultName;
-                    const isEditing = editingLayerId === shape.id;
-                    return (
-                      <div
-                        key={shape.id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all"
-                        style={{ 
-                          background: isSelected ? '#e0e7ff' : '#fff',
-                          boxShadow: isSelected ? '0 2px 8px rgba(0,74,173,0.25)' : '0 1px 3px rgba(0,0,0,0.1)'
-                        }}
-                        onClick={() => setSelectedId(shape.id)}
-                      >
-                        {/* Shape preview - proportional to actual shape */}
-                        <div 
-                          className="flex-shrink-0 flex items-center justify-center"
-                          style={{ width: '28px', height: '24px' }}
-                        >
-                          {(() => {
-                            const maxSize = 24;
-                            const ratio = shape.width / shape.height;
-                            let previewWidth, previewHeight;
-                            if (ratio > 1) {
-                              previewWidth = maxSize;
-                              previewHeight = maxSize / ratio;
-                            } else {
-                              previewHeight = maxSize;
-                              previewWidth = maxSize * ratio;
-                            }
-                            return (
-                              <div 
-                                style={{ 
-                                  width: `${previewWidth}px`,
-                                  height: `${previewHeight}px`,
-                                  background: shape.color,
-                                  clipPath: shape.type === 'circle' || shape.type === 'ellipse' ? 'none' : getClipPath(shape),
-                                  borderRadius: shape.type === 'circle' || shape.type === 'ellipse' ? '50%' : getBorderRadius(shape, previewWidth, previewHeight)
-                                }}
-                              />
-                            );
-                          })()}
-                        </div>
-                        {/* Layer name - editable on double click */}
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={editingLayerName}
-                            onChange={(e) => setEditingLayerName(e.target.value)}
-                            onBlur={() => {
-                              if (editingLayerName.trim()) {
-                                updateSelectedShape('layerName', editingLayerName.trim());
-                              }
-                              setEditingLayerId(null);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                if (editingLayerName.trim()) {
-                                  updateSelectedShape('layerName', editingLayerName.trim());
-                                }
-                                setEditingLayerId(null);
-                              } else if (e.key === 'Escape') {
-                                setEditingLayerId(null);
-                              }
-                            }}
-                            className="text-xs flex-1 px-1 py-0.5 rounded"
-                            style={{ background: '#fff', border: '1px solid #004aad', color: '#000', outline: 'none' }}
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          <span 
-                            className="text-xs flex-1 truncate" 
-                            style={{ color: '#000' }}
-                            onDoubleClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedId(shape.id);
-                              setEditingLayerId(shape.id);
-                              setEditingLayerName(shape.layerName || defaultName);
-                            }}
-                            title="Double-click to rename"
-                          >
-                            {displayName}
-                          </span>
-                        )}
-                        {/* Layer controls */}
-                        {isSelected && !isEditing && (
-                          <div className="flex gap-1">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); bringForward(shape.id); }}
-                              className="p-1 transition-opacity hover:opacity-70"
-                              title="Bring Forward"
-                            >
-                              <i className="fa-solid fa-angle-up" style={{ fontSize: '14px', color: '#004aad' }}></i>
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); sendBackward(shape.id); }}
-                              className="p-1 transition-opacity hover:opacity-70"
-                              title="Send Backward"
-                            >
-                              <i className="fa-solid fa-angle-down" style={{ fontSize: '14px', color: '#004aad' }}></i>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                      <path d="M2 17l10 5 10-5" />
-                      <path d="M2 12l10 5 10-5" />
-                    </svg>
-                    <p className="text-xs" style={{ color: '#999' }}>No layers yet. Add shapes to see them here.</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {/* Generated Code */}
-      <div className="mt-6 mx-0 md:mx-12 flex flex-col gap-4">
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>CSS</label>
-          <div className="relative">
-            <pre 
-              className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
-              onClick={() => copyCSS(generateCanvasCSS())}
-            >
-              <code>{generateCanvasCSS()}</code>
-            </pre>
-            <button
-              onClick={() => copyCSS(generateCanvasCSS())}
-              className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium transition-all"
-              style={{ background: copiedCSS ? '#10b981' : '#004aad', color: '#fff' }}
-            >
-              {copiedCSS ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>HTML</label>
-          <div className="relative">
-            <pre 
-              className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
-              onClick={() => copyHTML(generateCanvasHTML())}
-            >
-              <code>{generateCanvasHTML()}</code>
-            </pre>
-            <button
-              onClick={() => copyHTML(generateCanvasHTML())}
-              className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium transition-all"
-              style={{ background: copiedHTML ? '#10b981' : '#004aad', color: '#fff' }}
-            >
-              {copiedHTML ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ShapeCreator
+      key={key}
+      mode="edit"
+      initialShapes={shapes}
+      onBack={onBack}
+      onSave={onOverwrite}
+      onSaveAsNew={onSaveAsNew}
+      showNotification={showNotification}
+    />
   );
 }
 
+
 // Shape Creator Component - Drag & Drop Canvas
-function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibrary, showNotification, addShapeToCanvasRef }) {
-  const [canvasShapes, setCanvasShapes] = useState([]);
+function ShapeCreator({ 
+  // Mode: 'create' or 'edit'
+  mode = 'create',
+  // Initial shapes for edit mode
+  initialShapes = [],
+  // Create mode props
+  copied, 
+  copyToClipboard, 
+  onSaveCreation, 
+  onPublishToLibrary, 
+  showNotification, 
+  addShapeToCanvasRef,
+  // Edit mode props
+  onBack,
+  onSave,
+  onSaveAsNew
+}) {
+  // Debug: log what we receive
+  console.log('ShapeCreator mode:', mode, 'initialShapes:', initialShapes);
+  
+  const [canvasShapes, setCanvasShapes] = useState(() => {
+    const shapes = initialShapes.map((s, i) => ({ ...s, id: s.id || Date.now() + i }));
+    console.log('Initializing canvasShapes:', shapes);
+    return shapes;
+  });
   const [selectedId, setSelectedId] = useState(null);
   const [dragState, setDragState] = useState(null); // { id, offsetX, offsetY, type: 'move' | 'resize' }
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -3455,6 +2076,9 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [publishDialogName, setPublishDialogName] = useState('');
   const [publishDialogType, setPublishDialogType] = useState('shape');
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [showSaveAsDialog, setShowSaveAsDialog] = useState(false);
+  const [saveAsDialogName, setSaveAsDialogName] = useState('');
   const [copiedCSS, setCopiedCSS] = useState(false);
   const [copiedHTML, setCopiedHTML] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(false);
@@ -3467,12 +2091,15 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
 
   // Check for mobile viewport
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false); // Below lg breakpoint (1024px) - left sidebar hidden
   React.useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
+      const tablet = window.innerWidth < 1024; // lg breakpoint
       setIsMobile(mobile);
-      // Set default tab to 'shapes' on mobile if no shapes exist yet
-      if (mobile && canvasShapes.length === 0) {
+      setIsTablet(tablet);
+      // Set default tab to 'shapes' on tablet/mobile if no shapes exist yet (since left sidebar is hidden)
+      if (tablet && canvasShapes.length === 0) {
         setRightPanelTab('shapes');
       }
     };
@@ -3481,10 +2108,11 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Undo/Redo state - initialize with empty canvas state
-  const [history, setHistory] = useState([[]]);
+  // Undo/Redo state - initialize with initial shapes
+  const initShapes = React.useMemo(() => initialShapes.map((s, i) => ({ ...s, id: s.id || Date.now() + i })), []);
+  const [history, setHistory] = useState([initShapes]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const historyRef = React.useRef({ history: [[]], index: 0 });
+  const historyRef = React.useRef({ history: [initShapes], index: 0 });
 
   // Keep ref in sync
   React.useEffect(() => {
@@ -3960,9 +2588,116 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   };
   
   return (
-    <div>
+    <div className={mode === 'edit' ? 'p-3 md:p-6' : ''}>
+      {/* Back Confirmation Dialog - Edit mode only */}
+      {mode === 'edit' && showBackConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: '#000' }}>Leave Editor?</h3>
+            <p className="text-sm mb-6" style={{ color: '#666' }}>
+              Are you sure you want to go back? Any unsaved changes will be lost.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowBackConfirm(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: '#f3f4f6', color: '#000' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowBackConfirm(false);
+                  onBack && onBack();
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: '#dc2626', color: '#fff' }}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save As Dialog - Edit mode only */}
+      {mode === 'edit' && showSaveAsDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#000' }}>Save As New Creation</h3>
+            <p className="text-sm mb-4" style={{ color: '#666' }}>
+              Enter a name for your new creation.
+            </p>
+            <input
+              type="text"
+              value={saveAsDialogName}
+              onChange={(e) => setSaveAsDialogName(e.target.value)}
+              placeholder="Creation name..."
+              className="w-full px-4 py-3 rounded-xl text-sm outline-none mb-6"
+              style={{ background: '#f9fafb', border: '2px solid #e5e7eb', color: '#000' }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && saveAsDialogName.trim()) {
+                  onSaveAsNew && onSaveAsNew(canvasShapes, saveAsDialogName.trim());
+                  setShowSaveAsDialog(false);
+                  setSaveAsDialogName('');
+                } else if (e.key === 'Escape') {
+                  setShowSaveAsDialog(false);
+                }
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSaveAsDialog(false)}
+                className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all"
+                style={{ background: '#f1f5f9', color: '#666' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!saveAsDialogName.trim()) {
+                    showNotification && showNotification('Please enter a name', 'error');
+                    return;
+                  }
+                  onSaveAsNew && onSaveAsNew(canvasShapes, saveAsDialogName.trim());
+                  setShowSaveAsDialog(false);
+                  setSaveAsDialogName('');
+                }}
+                className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
+                style={{ background: '#004aad', color: '#fff' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                  <polyline points="17,21 17,13 7,13 7,21" />
+                  <polyline points="7,3 7,8 15,8" />
+                </svg>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
-        <h2 className="text-lg md:text-xl font-semibold" style={{ color: '#000' }}>Create Custom Object</h2>
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Back button - Edit mode only */}
+          {mode === 'edit' && (
+            <button
+              onClick={() => setShowBackConfirm(true)}
+              className="flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium transition-colors"
+              style={{ color: '#004aad' }}
+            >
+              <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+          )}
+          <h2 className="text-lg md:text-xl font-semibold" style={{ color: '#000' }}>
+            {mode === 'edit' ? 'Edit Creation' : 'Create Custom Object'}
+          </h2>
+        </div>
         <div className="flex flex-wrap gap-2 items-center">
           {/* Layer Order Buttons - Only show when shape is selected */}
           {selectedId && (() => {
@@ -4061,13 +2796,57 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
               </select>
             )}
           </div>
-          {canvasShapes.length > 0 && (
+          
+          {/* Mode-specific buttons */}
+          {mode === 'create' ? (
+            /* Create mode: Save to Creations, Publish to Library */
+            canvasShapes.length > 0 && (
+              <>
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    setSaveDialogName('Custom Creation');
+                    setShowSaveDialog(true);
+                  }}
+                  className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
+                  style={{ background: '#004aad', color: '#fff' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                    <polyline points="17,21 17,13 7,13 7,21" />
+                    <polyline points="7,3 7,8 15,8" />
+                  </svg>
+                  <span className="hidden sm:inline">Save</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    setPublishDialogName('My Custom Shape');
+                    setPublishDialogType('shape');
+                    setShowPublishDialog(true);
+                  }}
+                  className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
+                  style={{ background: '#ffde59', color: '#000' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                    <path d="M2 17l10 5 10-5" />
+                    <path d="M2 12l10 5 10-5" />
+                  </svg>
+                  <span className="hidden sm:inline">Publish</span>
+                </button>
+              </>
+            )
+          ) : (
+            /* Edit mode: Save (overwrite), Save as New */
             <>
               <button
                 onClick={() => {
-                  setSelectedId(null);
-                  setSaveDialogName('Custom Creation');
-                  setShowSaveDialog(true);
+                  if (canvasShapes.length === 0) {
+                    showNotification && showNotification('Add at least one shape', 'error');
+                    return;
+                  }
+                  onSave && onSave(canvasShapes);
                 }}
                 className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
                 style={{ background: '#004aad', color: '#fff' }}
@@ -4081,23 +2860,28 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
               </button>
               <button
                 onClick={() => {
+                  if (canvasShapes.length === 0) {
+                    showNotification && showNotification('Add at least one shape', 'error');
+                    return;
+                  }
                   setSelectedId(null);
-                  setPublishDialogName('My Custom Shape');
-                  setPublishDialogType('shape');
-                  setShowPublishDialog(true);
+                  setSaveAsDialogName('');
+                  setShowSaveAsDialog(true);
                 }}
                 className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
                 style={{ background: '#ffde59', color: '#000' }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                  <path d="M2 17l10 5 10-5" />
-                  <path d="M2 12l10 5 10-5" />
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                  <polyline points="17,21 17,13 7,13 7,21" />
+                  <polyline points="7,3 7,8 15,8" />
+                  <path d="M12 11v6M9 14h6" />
                 </svg>
-                <span className="hidden sm:inline">Publish</span>
+                <span className="hidden sm:inline">Save As</span>
               </button>
             </>
           )}
+          
           <button
             onClick={() => canvasShapes.length > 0 ? setShowClearConfirm(true) : null}
             className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
@@ -4325,6 +3109,43 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
       )}
       
       <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+        {/* Left Sidebar - Add Shapes (Desktop only) */}
+        {!isMobile && (
+          <div className="w-48 flex-shrink-0 hidden lg:block">
+            <label className="block text-xs font-medium uppercase tracking-wide mb-3" style={{ color: '#000' }}>Add Shapes</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(() => {
+                const sidebarColors = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB'];
+                const shapesList = [
+                  { type: 'rectangle', name: 'Rect', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="2" y="4" width="20" height="16" rx="2" /></svg> },
+                  { type: 'square', name: 'Square', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="3" y="3" width="18" height="18" rx="2" /></svg> },
+                  { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
+                  { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
+                  { type: 'triangle', name: 'Triangle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
+                  { type: 'rightTriangle', name: 'Right Tri', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="2,2 2,22 22,22" /></svg> },
+                  { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
+                  { type: 'pentagon', name: 'Pentagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,9 18,22 6,22 2,9" /></svg> },
+                  { type: 'hexagon', name: 'Hexagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="6,2 18,2 23,12 18,22 6,22 1,12" /></svg> },
+                  { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
+                  { type: 'arrow', name: 'Arrow', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12" /></svg> },
+                  { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
+                ];
+                return shapesList.map((shape, index) => (
+                  <button
+                    key={shape.type}
+                    onClick={() => addShapeToCanvas(shape.type)}
+                    className="flex flex-col items-center gap-1 p-3 rounded-lg transition-all hover:scale-105"
+                    style={{ background: '#fff', boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)', cursor: 'pointer' }}
+                  >
+                    {shape.getIcon(sidebarColors[index % sidebarColors.length])}
+                    <span className="text-xs" style={{ color: '#000' }}>{shape.name}</span>
+                  </button>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
+
         {/* Canvas */}
         <div className="flex-1 order-1 lg:order-none">
           <div 
@@ -4511,7 +3332,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <path d="M12 8v8M8 12h8" />
                   </svg>
-                  <p className="text-sm" style={{ color: '#999' }}>{isMobile ? 'Tap "Shapes" tab below to add shapes' : 'Click shapes above to add them here'}</p>
+                  <p className="text-sm" style={{ color: '#999' }}>{isTablet ? 'Tap "Shapes" tab to add shapes' : 'Click shapes on the left to add them here'}</p>
                 </div>
               </div>
             )}
@@ -4522,8 +3343,8 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
         <div className="w-full lg:w-64 order-2 lg:order-none">
           {/* Tab Buttons */}
           <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: '#f3f4f6' }}>
-            {/* Shapes Tab - Mobile Only */}
-            {isMobile && (
+            {/* Shapes Tab - Shows when left sidebar is hidden (below lg breakpoint) */}
+            {isTablet && (
               <button
                 onClick={() => setRightPanelTab('shapes')}
                 className="flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
@@ -4572,8 +3393,8 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
             </button>
           </div>
 
-          {/* Shapes Tab Content - Mobile Only */}
-          {isMobile && rightPanelTab === 'shapes' && (
+          {/* Shapes Tab Content - Tablet/Mobile Only */}
+          {isTablet && rightPanelTab === 'shapes' && (
             <div className="mb-4">
               <div className="grid grid-cols-4 gap-2">
                 {(() => {
@@ -4584,8 +3405,12 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                     { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
                     { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
                     { type: 'triangle', name: 'Tri', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
+                    { type: 'rightTriangle', name: 'Right Tri', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="2,2 2,22 22,22" /></svg> },
                     { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
+                    { type: 'pentagon', name: 'Pentagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,9 18,22 6,22 2,9" /></svg> },
+                    { type: 'hexagon', name: 'Hexagon', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="6,2 18,2 23,12 18,22 6,22 1,12" /></svg> },
                     { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
+                    { type: 'arrow', name: 'Arrow', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 16,12 16,22 8,22 8,12 2,12" /></svg> },
                     { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
                   ];
                   return shapesList.map((shape, index) => (
@@ -4920,7 +3745,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                 style={{ 
                   background: '#f8f9fa', 
                   boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
-                  height: '520px'
+                  height: isMobile ? '200px' : isTablet ? '300px' : '520px'
                 }}
               >
                 {canvasShapes.length > 0 ? (
