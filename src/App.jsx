@@ -3004,10 +3004,6 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
             </>
           ) : (
             <div className="text-center py-8">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
-              </svg>
               <p className="text-xs" style={{ color: '#999' }}>Select a shape to edit its properties</p>
             </div>
           )}
@@ -3075,6 +3071,8 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   const [gridSize, setGridSize] = useState(20);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'properties' or 'layers'
+  const [editingLayerId, setEditingLayerId] = useState(null);
+  const [editingLayerName, setEditingLayerName] = useState('');
   const canvasRef = React.useRef(null);
 
   // Undo/Redo state - initialize with empty canvas state
@@ -3545,7 +3543,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   const generateCanvasHTML = () => {
     if (canvasShapes.length === 0) return '<!-- Add shapes to the canvas -->';
     
-    return `<div class="canvas-container" style="position: relative; width: 600px; height: 400px;">\n` +
+    return `<div class="canvas-container" style="position: relative; width: 600px; height: 600px;">\n` +
       canvasShapes.map((shape, index) => {
         if (shape.type === 'text') {
           return `  <div class="shape-${index + 1}">${shape.text || 'Text'}</div>`;
@@ -3602,33 +3600,27 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
               onClick={undo}
               disabled={historyIndex <= 0}
               title="Undo (Ctrl+Z)"
-              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{ 
                 background: historyIndex <= 0 ? '#e5e7eb' : '#f3f4f6',
                 color: historyIndex <= 0 ? '#9ca3af' : '#004aad',
                 cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 10h11c4 0 7 3 7 7s-3 7-7 7H7" />
-                <path d="M7 6L3 10l4 4" />
-              </svg>
+              <i className="fas fa-undo" style={{ fontSize: '14px' }}></i>
             </button>
             <button
               onClick={redo}
               disabled={historyIndex >= history.length - 1}
               title="Redo (Ctrl+Shift+Z)"
-              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{ 
                 background: historyIndex >= history.length - 1 ? '#e5e7eb' : '#f3f4f6',
                 color: historyIndex >= history.length - 1 ? '#9ca3af' : '#004aad',
                 cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 10H10c-4 0-7 3-7 7s3 7 7 7h4" />
-                <path d="M17 6l4 4-4 4" />
-              </svg>
+              <i className="fas fa-redo" style={{ fontSize: '14px' }}></i>
             </button>
           </div>
           {/* Grid Snap Toggle */}
@@ -3932,7 +3924,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
             className="relative rounded-2xl overflow-hidden cursor-crosshair"
             style={{ 
               width: '100%', 
-              height: '400px', 
+              height: '650px', 
               background: '#fff',
               boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)',
               border: '2px dashed #e5e7eb'
@@ -4418,10 +4410,6 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                 </>
               ) : (
                 <div className="text-center py-8">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 16v-4M12 8h.01" />
-                  </svg>
                   <p className="text-xs" style={{ color: '#999' }}>Select a shape to edit its properties</p>
                 </div>
               )}
@@ -4432,71 +4420,139 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
           {rightPanelTab === 'layers' && (
             <>
               <h3 className="text-sm font-medium mb-3" style={{ color: '#000' }}>Layers</h3>
-              {canvasShapes.length > 0 ? (
-                <div className="space-y-1 max-h-80 overflow-auto">
-                {[...canvasShapes].reverse().map((shape, index) => {
-                  const isSelected = shape.id === selectedId;
-                  const layerIndex = canvasShapes.length - 1 - index;
-                  const shapeName = availableShapes.find(s => s.type === shape.type)?.name || shape.type;
-                  return (
-                    <div
-                      key={shape.id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all"
-                      style={{ 
-                        background: isSelected ? '#e0e7ff' : 'transparent',
-                        border: isSelected ? '1px solid #004aad' : '1px solid transparent'
-                      }}
-                      onClick={() => setSelectedId(shape.id)}
-                    >
-                      {/* Shape preview */}
-                      <div 
-                        className="w-6 h-6 rounded flex-shrink-0"
+              <div 
+                className="rounded-xl p-3 overflow-auto"
+                style={{ 
+                  background: '#f8f9fa', 
+                  boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
+                  height: '520px'
+                }}
+              >
+                {canvasShapes.length > 0 ? (
+                  <div className="space-y-1">
+                  {[...canvasShapes].reverse().map((shape, index) => {
+                    const isSelected = shape.id === selectedId;
+                    const layerIndex = canvasShapes.length - 1 - index;
+                    const defaultName = shape.type === 'text' 
+                      ? `"${shape.text?.slice(0, 10) || 'Text'}${shape.text?.length > 10 ? '...' : ''}"` 
+                      : availableShapes.find(s => s.type === shape.type)?.name || shape.type;
+                    const displayName = shape.layerName || defaultName;
+                    const isEditing = editingLayerId === shape.id;
+                    return (
+                      <div
+                        key={shape.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all"
                         style={{ 
-                          background: shape.color,
-                          clipPath: shape.type === 'circle' || shape.type === 'ellipse' ? 'none' : getClipPath(shape),
-                          borderRadius: shape.type === 'circle' || shape.type === 'ellipse' ? '50%' : getBorderRadius(shape, 24, 24)
+                          background: isSelected ? '#e0e7ff' : '#fff',
+                          boxShadow: isSelected ? '0 2px 8px rgba(0,74,173,0.25)' : '0 1px 3px rgba(0,0,0,0.1)'
                         }}
-                      />
-                      <span className="text-xs flex-1 truncate" style={{ color: '#000' }}>
-                        {shape.type === 'text' ? `"${shape.text?.slice(0, 10) || 'Text'}${shape.text?.length > 10 ? '...' : ''}"` : shapeName}
-                      </span>
-                      {/* Layer controls */}
-                      {isSelected && (
-                        <div className="flex gap-0.5">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); bringForward(shape.id); }}
-                            className="p-1 rounded hover:bg-blue-100 transition-colors"
-                            title="Bring Forward"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2">
-                              <path d="M12 15V9M8 11l4-4 4 4" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); sendBackward(shape.id); }}
-                            className="p-1 rounded hover:bg-blue-100 transition-colors"
-                            title="Send Backward"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2">
-                              <path d="M12 9v6M8 13l4 4 4-4" />
-                            </svg>
-                          </button>
+                        onClick={() => setSelectedId(shape.id)}
+                      >
+                        {/* Shape preview - proportional to actual shape */}
+                        <div 
+                          className="flex-shrink-0 flex items-center justify-center"
+                          style={{ width: '28px', height: '24px' }}
+                        >
+                          {(() => {
+                            const maxSize = 24;
+                            const ratio = shape.width / shape.height;
+                            let previewWidth, previewHeight;
+                            if (ratio > 1) {
+                              previewWidth = maxSize;
+                              previewHeight = maxSize / ratio;
+                            } else {
+                              previewHeight = maxSize;
+                              previewWidth = maxSize * ratio;
+                            }
+                            return (
+                              <div 
+                                style={{ 
+                                  width: `${previewWidth}px`,
+                                  height: `${previewHeight}px`,
+                                  background: shape.color,
+                                  clipPath: shape.type === 'circle' || shape.type === 'ellipse' ? 'none' : getClipPath(shape),
+                                  borderRadius: shape.type === 'circle' || shape.type === 'ellipse' ? '50%' : getBorderRadius(shape, previewWidth, previewHeight)
+                                }}
+                              />
+                            );
+                          })()}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              ) : (
-                <div className="text-center py-8">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                    <path d="M2 17l10 5 10-5" />
-                    <path d="M2 12l10 5 10-5" />
-                  </svg>
-                  <p className="text-xs" style={{ color: '#999' }}>No layers yet. Add shapes to see them here.</p>
+                        {/* Layer name - editable on double click */}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingLayerName}
+                            onChange={(e) => setEditingLayerName(e.target.value)}
+                            onBlur={() => {
+                              if (editingLayerName.trim()) {
+                                updateSelectedShape('layerName', editingLayerName.trim());
+                              }
+                              setEditingLayerId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (editingLayerName.trim()) {
+                                  updateSelectedShape('layerName', editingLayerName.trim());
+                                }
+                                setEditingLayerId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingLayerId(null);
+                              }
+                            }}
+                            className="text-xs flex-1 px-1 py-0.5 rounded"
+                            style={{ background: '#fff', border: '1px solid #004aad', color: '#000', outline: 'none' }}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span 
+                            className="text-xs flex-1 truncate" 
+                            style={{ color: '#000' }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(shape.id);
+                              setEditingLayerId(shape.id);
+                              setEditingLayerName(shape.layerName || defaultName);
+                            }}
+                            title="Double-click to rename"
+                          >
+                            {displayName}
+                          </span>
+                        )}
+                        {/* Layer controls */}
+                        {isSelected && !isEditing && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); bringForward(shape.id); }}
+                              className="p-1 transition-opacity hover:opacity-70"
+                              title="Bring Forward"
+                            >
+                              <i className="fa-solid fa-angle-up" style={{ fontSize: '14px', color: '#004aad' }}></i>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); sendBackward(shape.id); }}
+                              className="p-1 transition-opacity hover:opacity-70"
+                              title="Send Backward"
+                            >
+                              <i className="fa-solid fa-angle-down" style={{ fontSize: '14px', color: '#004aad' }}></i>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+                ) : (
+                  <div className="text-center py-8">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                    <p className="text-xs" style={{ color: '#999' }}>No layers yet. Add shapes to see them here.</p>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
