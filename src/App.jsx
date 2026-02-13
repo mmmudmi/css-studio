@@ -1798,7 +1798,7 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
 
       {/* Edit Creation View */}
       {isEditingCreation && shape.isCreation && (
-        <div className="fixed inset-0 bg-white z-50">
+        <div className="fixed inset-0 bg-white z-50 overflow-auto">
           <CreationEditor
             shapes={editedShapes}
             onBack={() => {
@@ -1978,6 +1978,10 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
   const [clipboardShape, setClipboardShape] = useState(null);
+  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'properties' or 'layers'
+  const [editingLayerId, setEditingLayerId] = useState(null);
+  const [editingLayerName, setEditingLayerName] = useState('');
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
   const canvasRef = React.useRef(null);
 
   // Undo/Redo history - initialize with the current shapes
@@ -2174,7 +2178,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
   };
 
   // Get border-radius for shape type
-  const getBorderRadius = (shape) => {
+  const getBorderRadius = (shape, width, height) => {
     const type = typeof shape === 'string' ? shape : shape.type;
     const borderRadius = typeof shape === 'object' ? shape.borderRadius : undefined;
     
@@ -2295,6 +2299,26 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
     }
   };
 
+  const bringForward = (shapeId) => {
+    updateCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shapeId);
+      if (index === -1 || index === prev.length - 1) return prev;
+      const newShapes = [...prev];
+      [newShapes[index], newShapes[index + 1]] = [newShapes[index + 1], newShapes[index]];
+      return newShapes;
+    });
+  };
+
+  const sendBackward = (shapeId) => {
+    updateCanvasShapes(prev => {
+      const index = prev.findIndex(s => s.id === shapeId);
+      if (index === -1 || index === 0) return prev;
+      const newShapes = [...prev];
+      [newShapes[index], newShapes[index - 1]] = [newShapes[index - 1], newShapes[index]];
+      return newShapes;
+    });
+  };
+
   const updateSelectedShape = (property, value) => {
     updateCanvasShapes(prev => prev.map(s => 
       s.id === selectedId ? { ...s, [property]: value } : s
@@ -2390,10 +2414,41 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
 
   return (
     <div className="p-6">
+      {/* Back Confirmation Dialog */}
+      {showBackConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <h3 className="text-lg font-semibold mb-2" style={{ color: '#000' }}>Leave Editor?</h3>
+            <p className="text-sm mb-6" style={{ color: '#666' }}>
+              Are you sure you want to go back? Any unsaved changes will be lost.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowBackConfirm(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: '#f3f4f6', color: '#000' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowBackConfirm(false);
+                  onBack();
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: '#dc2626', color: '#fff' }}
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <button
-            onClick={onBack}
+            onClick={() => setShowBackConfirm(true)}
             className="flex items-center gap-2 text-sm font-medium transition-colors"
             style={{ color: '#004aad' }}
           >
@@ -2411,33 +2466,27 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
               onClick={undo}
               disabled={historyIndex <= 0}
               title="Undo (Ctrl+Z)"
-              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{ 
                 background: historyIndex <= 0 ? '#e5e7eb' : '#f3f4f6',
                 color: historyIndex <= 0 ? '#9ca3af' : '#004aad',
                 cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 10h11c4 0 7 3 7 7s-3 7-7 7H7" />
-                <path d="M7 6L3 10l4 4" />
-              </svg>
+              <i className="fas fa-undo" style={{ fontSize: '14px' }}></i>
             </button>
             <button
               onClick={redo}
               disabled={historyIndex >= history.length - 1}
               title="Redo (Ctrl+Shift+Z)"
-              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{ 
                 background: historyIndex >= history.length - 1 ? '#e5e7eb' : '#f3f4f6',
                 color: historyIndex >= history.length - 1 ? '#9ca3af' : '#004aad',
                 cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 10H10c-4 0-7 3-7 7s3 7 7 7h4" />
-                <path d="M17 6l4 4-4 4" />
-              </svg>
+              <i className="fas fa-redo" style={{ fontSize: '14px' }}></i>
             </button>
           </div>
           {/* Grid Snap Toggle */}
@@ -2565,7 +2614,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
             className="relative rounded-2xl overflow-hidden cursor-crosshair"
             style={{ 
               width: '100%', 
-              height: '400px', 
+              height: '650px', 
               background: '#fff',
               boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)',
               border: '2px dashed #e5e7eb'
@@ -2713,8 +2762,46 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
           </div>
         </div>
         
-        {/* Properties Panel */}
+        {/* Properties/Layers Panel */}
         <div className="w-64">
+          {/* Tab Buttons */}
+          <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: '#f3f4f6' }}>
+            <button
+              onClick={() => setRightPanelTab('properties')}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              style={{
+                background: rightPanelTab === 'properties' ? '#fff' : 'transparent',
+                color: rightPanelTab === 'properties' ? '#004aad' : '#666',
+                boxShadow: rightPanelTab === 'properties' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+              </svg>
+              Properties
+            </button>
+            <button
+              onClick={() => setRightPanelTab('layers')}
+              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              style={{
+                background: rightPanelTab === 'layers' ? '#fff' : 'transparent',
+                color: rightPanelTab === 'layers' ? '#004aad' : '#666',
+                boxShadow: rightPanelTab === 'layers' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+              Layers
+            </button>
+          </div>
+
+          {/* Properties Tab Content */}
+          {rightPanelTab === 'properties' && (
+            <>
           {selectedShape ? (
             <>
               <h3 className="text-sm font-medium mb-4" style={{ color: '#000' }}>
@@ -3006,6 +3093,148 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
             <div className="text-center py-8">
               <p className="text-xs" style={{ color: '#999' }}>Select a shape to edit its properties</p>
             </div>
+          )}
+            </>
+          )}
+
+          {/* Layers Tab Content */}
+          {rightPanelTab === 'layers' && (
+            <>
+              <h3 className="text-sm font-medium mb-3" style={{ color: '#000' }}>Layers</h3>
+              <div 
+                className="rounded-xl p-3 overflow-auto"
+                style={{ 
+                  background: '#f8f9fa', 
+                  boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.08)',
+                  height: '520px'
+                }}
+              >
+                {canvasShapes.length > 0 ? (
+                  <div className="space-y-1">
+                  {[...canvasShapes].reverse().map((shape, index) => {
+                    const isSelected = shape.id === selectedId;
+                    const layerIndex = canvasShapes.length - 1 - index;
+                    const defaultName = shape.type === 'text' 
+                      ? `"${shape.text?.slice(0, 10) || 'Text'}${shape.text?.length > 10 ? '...' : ''}"` 
+                      : availableShapes.find(s => s.type === shape.type)?.name || shape.type;
+                    const displayName = shape.layerName || defaultName;
+                    const isEditing = editingLayerId === shape.id;
+                    return (
+                      <div
+                        key={shape.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all"
+                        style={{ 
+                          background: isSelected ? '#e0e7ff' : '#fff',
+                          boxShadow: isSelected ? '0 2px 8px rgba(0,74,173,0.25)' : '0 1px 3px rgba(0,0,0,0.1)'
+                        }}
+                        onClick={() => setSelectedId(shape.id)}
+                      >
+                        {/* Shape preview - proportional to actual shape */}
+                        <div 
+                          className="flex-shrink-0 flex items-center justify-center"
+                          style={{ width: '28px', height: '24px' }}
+                        >
+                          {(() => {
+                            const maxSize = 24;
+                            const ratio = shape.width / shape.height;
+                            let previewWidth, previewHeight;
+                            if (ratio > 1) {
+                              previewWidth = maxSize;
+                              previewHeight = maxSize / ratio;
+                            } else {
+                              previewHeight = maxSize;
+                              previewWidth = maxSize * ratio;
+                            }
+                            return (
+                              <div 
+                                style={{ 
+                                  width: `${previewWidth}px`,
+                                  height: `${previewHeight}px`,
+                                  background: shape.color,
+                                  clipPath: shape.type === 'circle' || shape.type === 'ellipse' ? 'none' : getClipPath(shape),
+                                  borderRadius: shape.type === 'circle' || shape.type === 'ellipse' ? '50%' : getBorderRadius(shape, previewWidth, previewHeight)
+                                }}
+                              />
+                            );
+                          })()}
+                        </div>
+                        {/* Layer name - editable on double click */}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editingLayerName}
+                            onChange={(e) => setEditingLayerName(e.target.value)}
+                            onBlur={() => {
+                              if (editingLayerName.trim()) {
+                                updateSelectedShape('layerName', editingLayerName.trim());
+                              }
+                              setEditingLayerId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (editingLayerName.trim()) {
+                                  updateSelectedShape('layerName', editingLayerName.trim());
+                                }
+                                setEditingLayerId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingLayerId(null);
+                              }
+                            }}
+                            className="text-xs flex-1 px-1 py-0.5 rounded"
+                            style={{ background: '#fff', border: '1px solid #004aad', color: '#000', outline: 'none' }}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span 
+                            className="text-xs flex-1 truncate" 
+                            style={{ color: '#000' }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(shape.id);
+                              setEditingLayerId(shape.id);
+                              setEditingLayerName(shape.layerName || defaultName);
+                            }}
+                            title="Double-click to rename"
+                          >
+                            {displayName}
+                          </span>
+                        )}
+                        {/* Layer controls */}
+                        {isSelected && !isEditing && (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); bringForward(shape.id); }}
+                              className="p-1 transition-opacity hover:opacity-70"
+                              title="Bring Forward"
+                            >
+                              <i className="fa-solid fa-angle-up" style={{ fontSize: '14px', color: '#004aad' }}></i>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); sendBackward(shape.id); }}
+                              className="p-1 transition-opacity hover:opacity-70"
+                              title="Send Backward"
+                            >
+                              <i className="fa-solid fa-angle-down" style={{ fontSize: '14px', color: '#004aad' }}></i>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1" className="mx-auto mb-2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                    <p className="text-xs" style={{ color: '#999' }}>No layers yet. Add shapes to see them here.</p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -3659,6 +3888,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
             <>
               <button
                 onClick={() => {
+                  setSelectedId(null);
                   setSaveDialogName('Custom Creation');
                   setShowSaveDialog(true);
                 }}
@@ -3674,6 +3904,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
               </button>
               <button
                 onClick={() => {
+                  setSelectedId(null);
                   setPublishDialogName('My Custom Shape');
                   setPublishDialogType('shape');
                   setShowPublishDialog(true);
