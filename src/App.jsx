@@ -2717,7 +2717,10 @@ function ShapeCreator({
                     cursor: isAtFront ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <i className="fi fi-sr-bring-forward" style={{ fontSize: '14px' }}></i>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="8" y="2" width="13" height="13" rx="2" fill="currentColor" />
+                    <rect x="3" y="9" width="13" height="13" rx="2" fill="none" />
+                  </svg>
                 </button>
                 <button
                   onClick={() => sendBackward(selectedId)}
@@ -2730,7 +2733,10 @@ function ShapeCreator({
                     cursor: isAtBack ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <i className="fi fi-sr-send-backward" style={{ fontSize: '14px' }}></i>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="2" width="13" height="13" rx="2" fill="none" />
+                    <rect x="8" y="9" width="13" height="13" rx="2" fill="currentColor" />
+                  </svg>
                 </button>
               </div>
             );
@@ -2748,7 +2754,10 @@ function ShapeCreator({
                 cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'
               }}
             >
-              <i className="fas fa-undo" style={{ fontSize: '14px' }}></i>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 14L4 9l5-5" />
+                <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+              </svg>
             </button>
             <button
               onClick={redo}
@@ -2761,7 +2770,10 @@ function ShapeCreator({
                 cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'
               }}
             >
-              <i className="fas fa-redo" style={{ fontSize: '14px' }}></i>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 14l5-5-5-5" />
+                <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />
+              </svg>
             </button>
           </div>
           {/* Grid Snap Toggle */}
@@ -3847,14 +3859,18 @@ function ShapeCreator({
                               className="p-1 transition-opacity hover:opacity-70"
                               title="Bring Forward"
                             >
-                              <i className="fa-solid fa-angle-up" style={{ fontSize: '14px', color: '#004aad' }}></i>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2">
+                                <path d="M18 15l-6-6-6 6" />
+                              </svg>
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); sendBackward(shape.id); }}
                               className="p-1 transition-opacity hover:opacity-70"
                               title="Send Backward"
                             >
-                              <i className="fa-solid fa-angle-down" style={{ fontSize: '14px', color: '#004aad' }}></i>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2">
+                                <path d="M6 9l6 6 6-6" />
+                              </svg>
                             </button>
                           </div>
                         )}
