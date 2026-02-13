@@ -3240,7 +3240,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
       </div>
       
       {/* Generated Code */}
-      <div className="mt-6 grid grid-cols-2 gap-4">
+      <div className="mt-6 mx-12 flex flex-col gap-4">
         <div>
           <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>CSS</label>
           <div className="relative">
