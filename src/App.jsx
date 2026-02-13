@@ -1042,8 +1042,8 @@ ${creationShapes.map((shape, index) => {
       <div className="px-4 md:px-8 py-4 md:py-6 relative z-10" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Mobile menu button */}
-            {isMobile && (
+            {/* Mobile menu button - hidden on create page */}
+            {isMobile && activeTab !== 'create' && (
               <button
                 onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
                 className="p-2 rounded-lg transition-all"
