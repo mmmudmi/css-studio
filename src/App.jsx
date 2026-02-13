@@ -37,6 +37,30 @@ function CssShapes() {
   const [searchQuery, setSearchQuery] = useState('');
   const [savedSearchQuery, setSavedSearchQuery] = useState('');
   
+  // Mobile sidebar state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Check for mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Close mobile sidebar when selecting a shape
+  useEffect(() => {
+    if (selectedShape && isMobile) {
+      setIsMobileSidebarOpen(false);
+    }
+  }, [selectedShape, isMobile]);
+  
   // Save dialog state
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveDialogName, setSaveDialogName] = useState('');
@@ -795,15 +819,16 @@ ${creationShapes.map((shape, index) => {
       {/* Toast Notification */}
       {notification && (
         <div 
-          className="fixed bottom-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-3"
+          className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 z-50 px-4 md:px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 md:gap-3"
           style={{
             background: notification.type === 'success' ? '#004aad' : '#ef4444',
             color: '#fff',
-            animation: 'slideIn 0.3s ease-out'
+            animation: 'slideIn 0.3s ease-out',
+            maxWidth: isMobile ? 'none' : '400px'
           }}
         >
           {notification.type === 'success' ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width={isMobile ? "18" : "20"} height={isMobile ? "18" : "20"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
               <polyline points="22,4 12,14.01 9,11.01" />
             </svg>
@@ -1014,71 +1039,118 @@ ${creationShapes.map((shape, index) => {
       )}
       
       {/* Header */}
-      <div className="px-8 py-6 relative z-10" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="px-4 md:px-8 py-4 md:py-6 relative z-10" style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' }}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-4">
+            {/* Mobile menu button */}
+            {isMobile && (
+              <button
+                onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+                className="p-2 rounded-lg transition-all"
+                style={{ background: isMobileSidebarOpen ? '#004aad' : '#f1f5f9', color: isMobileSidebarOpen ? '#fff' : '#000' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  {isMobileSidebarOpen ? (
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  ) : (
+                    <>
+                      <path d="M3 12h18M3 6h18M3 18h18" />
+                    </>
+                  )}
+                </svg>
+              </button>
+            )}
             <img 
               src="https://i.postimg.cc/5N639Lx9/Blue-and-Beige-Modern-Handwritten-Art-Logo.png" 
               alt="Logo" 
-              style={{ height: '50px', width: 'auto', cursor: 'pointer' }}
-              onClick={() => { setActiveTab('search'); closeShapeCard(); }}
+              style={{ height: isMobile ? '36px' : '50px', width: 'auto', cursor: 'pointer' }}
+              onClick={() => { setActiveTab('search'); closeShapeCard(); setIsMobileSidebarOpen(false); }}
             />
           </div>
           
           {/* Main Tabs */}
           <div className="flex gap-1 p-1 rounded-xl" style={{ background: '#fff' }}>
             <button
-              onClick={() => { setActiveTab('search'); closeShapeCard(); }}
-              className="px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+              onClick={() => { setActiveTab('search'); closeShapeCard(); setIsMobileSidebarOpen(false); }}
+              className="px-2 md:px-5 py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
               style={{
                 background: activeTab === 'search' ? '#004aad' : 'transparent',
                 color: activeTab === 'search' ? '#fff' : '#000',
                 boxShadow: activeTab === 'search' ? '0 2px 8px rgba(0,74,173,0.2)' : 'none'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              Search
+              <span className="hidden sm:inline">Search</span>
             </button>
             <button
-              onClick={() => { setActiveTab('create'); closeShapeCard(); }}
-              className="px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+              onClick={() => { setActiveTab('create'); closeShapeCard(); setIsMobileSidebarOpen(false); }}
+              className="px-2 md:px-5 py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
               style={{
                 background: activeTab === 'create' ? '#004aad' : 'transparent',
                 color: activeTab === 'create' ? '#fff' : '#000',
                 boxShadow: activeTab === 'create' ? '0 2px 8px rgba(0,74,173,0.2)' : 'none'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Create
+              <span className="hidden sm:inline">Create</span>
             </button>
             <button
-              onClick={() => { setActiveTab('saved'); closeShapeCard(); }}
-              className="px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+              onClick={() => { setActiveTab('saved'); closeShapeCard(); setIsMobileSidebarOpen(false); }}
+              className="px-2 md:px-5 py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
               style={{
                 background: activeTab === 'saved' ? '#004aad' : 'transparent',
                 color: activeTab === 'saved' ? '#fff' : '#000',
                 boxShadow: activeTab === 'saved' ? '0 2px 8px rgba(0,74,173,0.2)' : 'none'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                 <polyline points="17,21 17,13 7,13 7,21" />
                 <polyline points="7,3 7,8 15,8" />
               </svg>
-              Saved
+              <span className="hidden sm:inline">Saved</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="flex" style={{ minHeight: 'calc(100vh - 85px)' }}>
+      <div className="flex flex-col md:flex-row" style={{ minHeight: 'calc(100vh - 85px)' }}>
+        {/* Mobile Sidebar Overlay */}
+        {isMobile && isMobileSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+        )}
+        
         {/* Sidebar - Controls */}
-        <div className="w-72 p-6 overflow-auto relative z-10" style={{ background: '#fff', boxShadow: '2px 0 8px rgba(0, 0, 0, 0.08)' }}>
+        {(!isMobile || isMobileSidebarOpen) && (
+        <div 
+          className={`${isMobile ? 'fixed left-0 top-0 bottom-0 w-[280px] max-w-[85vw] z-50' : 'w-72'} p-4 md:p-6 overflow-auto`}
+          style={{ background: '#fff', boxShadow: '2px 0 8px rgba(0, 0, 0, 0.08)' }}
+        >
+          {/* Close button for mobile sidebar */}
+          {isMobile && (
+            <div className="flex justify-between items-center mb-4 pb-4" style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <span className="text-sm font-medium" style={{ color: '#000' }}>
+                {selectedShape ? 'Shape Options' : activeTab === 'search' ? 'Filters' : activeTab === 'create' ? 'Add Shapes' : 'Saved'}
+              </span>
+              <button
+                onClick={() => setIsMobileSidebarOpen(false)}
+                className="p-2 rounded-lg"
+                style={{ background: '#f1f5f9', color: '#000' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
           {!selectedShape ? (
             activeTab === 'search' ? (
               <>
@@ -1439,15 +1511,17 @@ ${creationShapes.map((shape, index) => {
             </>
           )}
         </div>
+        )}
 
         {/* Main Content */}
-        <div className="flex-1 p-6 overflow-auto" style={{ background: '#fff', minHeight: '100%' }}>
+        <div className="flex-1 p-3 md:p-6 overflow-auto" style={{ background: '#fff', minHeight: '100%' }}>
           {selectedShape ? (
             <ShapeDetailView
               shape={selectedShape}
               onBack={() => closeShapeCard()}
               generateCSS={generateCSS}
               renderShapePreview={renderShapePreview}
+              isMobile={isMobile}
               size={size}
               copied={copied}
               copiedHtml={copiedHtml}
@@ -1536,7 +1610,7 @@ ${creationShapes.map((shape, index) => {
 }
 
 // Shape Detail View Component
-function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size, copied, copiedHtml, copyToClipboard, copyHtmlToClipboard, colorValue, onSave, onDelete, onRename, onUpdateCreation, onSaveAsNew, isSaved, showNotification }) {
+function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size, copied, copiedHtml, copyToClipboard, copyHtmlToClipboard, colorValue, onSave, onDelete, onRename, onUpdateCreation, onSaveAsNew, isSaved, showNotification, isMobile }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(shape.name);
   const [isEditingCreation, setIsEditingCreation] = useState(false);
@@ -1675,16 +1749,17 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
   
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 md:mb-6 gap-2">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 text-sm transition-colors"
+          className="flex items-center gap-1 md:gap-2 text-xs md:text-sm transition-colors"
           style={{ color: '#004aad' }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          Back to shapes
+          <span className="hidden sm:inline">Back to shapes</span>
+          <span className="sm:hidden">Back</span>
         </button>
         
         <div className="flex gap-2">
@@ -1714,18 +1789,18 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
       </div>
 
       {/* Shape Preview - Bigger and Centered */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <div 
           className="flex items-center justify-center rounded-2xl mx-auto"
           style={{ 
-            width: '400px', 
-            height: '400px',
+            width: isMobile ? 'min(300px, 90vw)' : '400px', 
+            height: isMobile ? 'min(300px, 90vw)' : '400px',
             background: '#fff',
             boxShadow: '0 25px 50px -12px rgba(0, 74, 173, 0.1)'
           }}
         >
           {/* For creations, use larger preview size to fill the container */}
-          {renderShapePreview(shape, shape.isCreation ? 350 : size, true)}
+          {renderShapePreview(shape, shape.isCreation ? (isMobile ? 250 : 350) : size, true)}
         </div>
         {/* Editable name for saved shapes */}
         {isSaved && onRename ? (
@@ -1823,18 +1898,18 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
       <div>
         <div className="relative">
           <pre 
-            className="p-5 rounded-xl text-sm overflow-auto cursor-pointer"
-            style={{ background: '#f3f4f6', color: '#000', maxHeight: '400px' }}
+            className="p-3 md:p-5 rounded-xl text-xs md:text-sm overflow-auto cursor-pointer"
+            style={{ background: '#f3f4f6', color: '#000', maxHeight: isMobile ? '250px' : '400px' }}
             onClick={() => copyToClipboard(cssCode)}
           >
             <code>{cssCode}</code>
           </pre>
           <button
             onClick={() => copyToClipboard(cssCode)}
-            className="absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-            style={{ background: copied ? '#10b981' : '#004aad', color: '#fff' }}
+            className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] md:text-xs font-medium transition-all"
+            style={{ background: copied ? '#10b981' : '#004aad', color: '#fff', minHeight: 'auto' }}
           >
-            {copied ? 'Copied!' : 'Copy CSS'}
+            {copied ? '✓' : 'Copy'}
           </button>
         </div>
 
@@ -1842,18 +1917,18 @@ function ShapeDetailView({ shape, onBack, generateCSS, renderShapePreview, size,
           <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>HTML Usage</p>
           <div className="relative">
             <pre 
-              className="p-5 rounded-xl text-sm overflow-auto cursor-pointer"
-              style={{ background: '#f3f4f6', color: '#000', maxHeight: '400px' }}
+              className="p-3 md:p-5 rounded-xl text-xs md:text-sm overflow-auto cursor-pointer"
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: isMobile ? '200px' : '400px' }}
               onClick={() => copyHtmlToClipboard(htmlCode)}
             >
               <code>{htmlCode}</code>
             </pre>
             <button
               onClick={() => copyHtmlToClipboard(htmlCode)}
-              className="absolute top-3 right-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-              style={{ background: copiedHtml ? '#10b981' : '#004aad', color: '#fff' }}
+              className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] md:text-xs font-medium transition-all"
+              style={{ background: copiedHtml ? '#10b981' : '#004aad', color: '#fff', minHeight: 'auto' }}
             >
-              {copiedHtml ? 'Copied!' : 'Copy HTML'}
+              {copiedHtml ? '✓' : 'Copy'}
             </button>
           </div>
         </div>
@@ -1875,13 +1950,13 @@ function ShapeGrid({ shapes, onSelect, renderShapePreview, isSavedCategory, onDe
   
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-medium" style={{ color: '#000' }}>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h2 className="text-base md:text-lg font-medium" style={{ color: '#000' }}>
           {shapes.length} {itemLabel}{shapes.length !== 1 ? 's' : ''}
         </h2>
       </div>
 
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+      <div className="grid gap-3 md:gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(120px, 45vw), 1fr))' }}>
         {shapes.map((shape, index) => {
           // Color palette for random shape colors
           const colorPalette = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB', '#2EC4B6'];
@@ -1891,7 +1966,7 @@ function ShapeGrid({ shapes, onSelect, renderShapePreview, isSavedCategory, onDe
           return (
             <div
               key={shape.id || shape.name}
-              className="relative p-4 rounded-xl transition-all hover:scale-105 text-center group cursor-pointer"
+              className="relative p-3 md:p-4 rounded-xl transition-all hover:scale-105 text-center group cursor-pointer active:scale-95"
               style={{
                 background: '#fff',
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
@@ -1978,11 +2053,27 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
   const [clipboardShape, setClipboardShape] = useState(null);
-  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'properties' or 'layers'
+  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'shapes' (mobile), 'properties' or 'layers'
   const [editingLayerId, setEditingLayerId] = useState(null);
   const [editingLayerName, setEditingLayerName] = useState('');
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const canvasRef = React.useRef(null);
+
+  // Check for mobile viewport
+  const [isMobile, setIsMobile] = useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Set default tab to 'shapes' on mobile if no shapes exist yet
+      if (mobile && canvasShapes.length === 0) {
+        setRightPanelTab('shapes');
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Undo/Redo history - initialize with the current shapes
   const initialShapes = React.useMemo(() => shapes.map((s, i) => ({ ...s, id: s.id || Date.now() + i })), []);
@@ -2413,7 +2504,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-3 md:p-6">
       {/* Back Confirmation Dialog */}
       {showBackConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2445,82 +2536,67 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
+        <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => setShowBackConfirm(true)}
-            className="flex items-center gap-2 text-sm font-medium transition-colors"
+            className="flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium transition-colors"
             style={{ color: '#004aad' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
             Back
           </button>
-          <h2 className="text-xl font-semibold" style={{ color: '#000' }}>Edit Creation</h2>
+          <h2 className="text-base md:text-xl font-semibold" style={{ color: '#000' }}>Edit Creation</h2>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-1 md:gap-2 items-center">
           {/* Undo/Redo Buttons */}
-          <div className="flex items-center gap-1 mr-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={undo}
               disabled={historyIndex <= 0}
               title="Undo (Ctrl+Z)"
-              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
+              className="p-1.5 md:p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{ 
                 background: historyIndex <= 0 ? '#e5e7eb' : '#f3f4f6',
                 color: historyIndex <= 0 ? '#9ca3af' : '#004aad',
                 cursor: historyIndex <= 0 ? 'not-allowed' : 'pointer'
               }}
             >
-              <i className="fas fa-undo" style={{ fontSize: '14px' }}></i>
+              <i className="fas fa-undo" style={{ fontSize: '12px' }}></i>
             </button>
             <button
               onClick={redo}
               disabled={historyIndex >= history.length - 1}
               title="Redo (Ctrl+Shift+Z)"
-              className="p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
+              className="p-1.5 md:p-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{ 
                 background: historyIndex >= history.length - 1 ? '#e5e7eb' : '#f3f4f6',
                 color: historyIndex >= history.length - 1 ? '#9ca3af' : '#004aad',
                 cursor: historyIndex >= history.length - 1 ? 'not-allowed' : 'pointer'
               }}
             >
-              <i className="fas fa-redo" style={{ fontSize: '14px' }}></i>
+              <i className="fas fa-redo" style={{ fontSize: '12px' }}></i>
             </button>
           </div>
           {/* Grid Snap Toggle */}
-          <div className="flex items-center gap-2 mr-2">
-            <button
-              onClick={() => setSnapToGrid(!snapToGrid)}
-              className="px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
-              style={{ 
-                background: snapToGrid ? '#004aad' : '#f3f4f6',
-                color: snapToGrid ? '#fff' : '#666'
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" />
-                <rect x="14" y="3" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" />
-                <rect x="3" y="14" width="7" height="7" />
-              </svg>
-              Snap
-            </button>
-            {snapToGrid && (
-              <select
-                value={gridSize}
-                onChange={(e) => setGridSize(Number(e.target.value))}
-                className="px-2 py-2 rounded-lg text-sm"
-                style={{ background: '#f3f4f6', border: '1px solid #e5e7eb', color: '#000' }}
-              >
-                <option value={10}>10px</option>
-                <option value={20}>20px</option>
-                <option value={40}>40px</option>
-                <option value={50}>50px</option>
-              </select>
-            )}
-          </div>
+          <button
+            onClick={() => setSnapToGrid(!snapToGrid)}
+            className="p-1.5 md:px-3 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
+            style={{ 
+              background: snapToGrid ? '#004aad' : '#f3f4f6',
+              color: snapToGrid ? '#fff' : '#666'
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            <span className="hidden md:inline">Snap</span>
+          </button>
           <button
             onClick={() => {
               if (canvasShapes.length === 0) {
@@ -2529,15 +2605,15 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
               }
               onOverwrite(canvasShapes);
             }}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+            className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
             style={{ background: '#004aad', color: '#fff' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
               <polyline points="17,21 17,13 7,13 7,21" />
               <polyline points="7,3 7,8 15,8" />
             </svg>
-            Overwrite
+            <span className="hidden sm:inline">Save</span>
           </button>
           <button
             onClick={() => {
@@ -2547,29 +2623,30 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
               }
               onSaveAsNew(canvasShapes);
             }}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+            className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
             style={{ background: '#ffde59', color: '#000' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            Save as New
+            <span className="hidden sm:inline">New</span>
           </button>
           <button
             onClick={clearCanvas}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+            className="p-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
             style={{ background: '#fee2e2', color: '#dc2626' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
             </svg>
-            Clear
+            <span className="hidden md:inline">Clear</span>
           </button>
         </div>
       </div>
 
-      <div className="flex gap-6">
-        {/* Left Sidebar - Add Shapes */}
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
+        {/* Left Sidebar - Add Shapes (Desktop only) */}
+        {!isMobile && (
         <div className="w-48 flex-shrink-0">
           <label className="block text-xs font-medium uppercase tracking-wide mb-3" style={{ color: '#000' }}>Add Shapes</label>
           <div className="grid grid-cols-2 gap-2">
@@ -2606,15 +2683,17 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
             Click to add shapes to the canvas
           </p>
         </div>
+        )}
 
         {/* Canvas */}
-        <div className="flex-1">
+        <div className="flex-1 order-1 lg:order-none">
           <div 
             ref={canvasRef}
-            className="relative rounded-2xl overflow-hidden cursor-crosshair"
+            className="relative rounded-2xl overflow-hidden cursor-crosshair touch-none"
             style={{ 
               width: '100%', 
-              height: '650px', 
+              height: isMobile ? 'min(400px, 50vh)' : '650px',
+              minHeight: '250px',
               background: '#fff',
               boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)',
               border: '2px dashed #e5e7eb'
@@ -2622,6 +2701,38 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
             onMouseMove={handleCanvasMouseMove}
             onMouseUp={handleCanvasMouseUp}
             onMouseLeave={handleCanvasMouseUp}
+            onTouchStart={(e) => {
+              if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const canvas = canvasRef.current;
+                if (canvas) {
+                  const rect = canvas.getBoundingClientRect();
+                  const x = touch.clientX - rect.left;
+                  const y = touch.clientY - rect.top;
+                  for (let i = canvasShapes.length - 1; i >= 0; i--) {
+                    const s = canvasShapes[i];
+                    if (x >= s.x && x <= s.x + s.width && y >= s.y && y <= s.y + s.height) {
+                      setSelectedId(s.id);
+                      setDragState({
+                        id: s.id,
+                        type: 'move',
+                        offsetX: x - s.x,
+                        offsetY: y - s.y
+                      });
+                      return;
+                    }
+                  }
+                }
+              }
+            }}
+            onTouchMove={(e) => {
+              if (dragState && e.touches.length === 1) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                handleCanvasMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+              }
+            }}
+            onTouchEnd={() => handleCanvasMouseUp()}
             onClick={() => setSelectedId(null)}
           >
             {/* Grid */}
@@ -2763,12 +2874,29 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
         </div>
         
         {/* Properties/Layers Panel */}
-        <div className="w-64">
+        <div className={`${isMobile ? 'w-full order-2' : 'w-64'}`}>
           {/* Tab Buttons */}
           <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: '#f3f4f6' }}>
+            {/* Shapes Tab - Mobile Only */}
+            {isMobile && (
+              <button
+                onClick={() => setRightPanelTab('shapes')}
+                className="flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+                style={{
+                  background: rightPanelTab === 'shapes' ? '#fff' : 'transparent',
+                  color: rightPanelTab === 'shapes' ? '#004aad' : '#666',
+                  boxShadow: rightPanelTab === 'shapes' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Shapes
+              </button>
+            )}
             <button
               onClick={() => setRightPanelTab('properties')}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 px-2 md:px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 md:gap-1.5"
               style={{
                 background: rightPanelTab === 'properties' ? '#fff' : 'transparent',
                 color: rightPanelTab === 'properties' ? '#004aad' : '#666',
@@ -2779,11 +2907,11 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
               </svg>
-              Properties
+              {isMobile ? 'Props' : 'Properties'}
             </button>
             <button
               onClick={() => setRightPanelTab('layers')}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 px-2 md:px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 md:gap-1.5"
               style={{
                 background: rightPanelTab === 'layers' ? '#fff' : 'transparent',
                 color: rightPanelTab === 'layers' ? '#004aad' : '#666',
@@ -2798,6 +2926,39 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
               Layers
             </button>
           </div>
+
+          {/* Shapes Tab Content - Mobile Only */}
+          {isMobile && rightPanelTab === 'shapes' && (
+            <div className="mb-4">
+              <div className="grid grid-cols-4 gap-2">
+                {(() => {
+                  const sidebarColors = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB'];
+                  const shapesList = [
+                    { type: 'rectangle', name: 'Rect', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="2" y="4" width="20" height="16" rx="2" /></svg> },
+                    { type: 'square', name: 'Square', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="3" y="3" width="18" height="18" rx="2" /></svg> },
+                    { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
+                    { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
+                    { type: 'triangle', name: 'Tri', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
+                    { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
+                    { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
+                    { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
+                  ];
+                  return shapesList.map((shape, index) => (
+                    <button
+                      key={shape.type}
+                      onClick={() => addShapeToCanvas(shape.type)}
+                      className="flex flex-col items-center gap-1 p-3 rounded-lg transition-all active:scale-95"
+                      style={{ background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                    >
+                      {shape.getIcon(sidebarColors[index % sidebarColors.length])}
+                      <span className="text-xs" style={{ color: '#000' }}>{shape.name}</span>
+                    </button>
+                  ));
+                })()}
+              </div>
+              <p className="text-xs mt-3 text-center" style={{ color: '#666' }}>Tap a shape to add it to the canvas</p>
+            </div>
+          )}
 
           {/* Properties Tab Content */}
           {rightPanelTab === 'properties' && (
@@ -3240,7 +3401,7 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
       </div>
       
       {/* Generated Code */}
-      <div className="mt-6 mx-12 flex flex-col gap-4">
+      <div className="mt-6 mx-0 md:mx-12 flex flex-col gap-4">
         <div>
           <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>CSS</label>
           <div className="relative">
@@ -3299,10 +3460,26 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'properties' or 'layers'
+  const [rightPanelTab, setRightPanelTab] = useState('properties'); // 'shapes' (mobile), 'properties' or 'layers'
   const [editingLayerId, setEditingLayerId] = useState(null);
   const [editingLayerName, setEditingLayerName] = useState('');
   const canvasRef = React.useRef(null);
+
+  // Check for mobile viewport
+  const [isMobile, setIsMobile] = useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Set default tab to 'shapes' on mobile if no shapes exist yet
+      if (mobile && canvasShapes.length === 0) {
+        setRightPanelTab('shapes');
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Undo/Redo state - initialize with empty canvas state
   const [history, setHistory] = useState([[]]);
@@ -3784,47 +3961,47 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
   
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold" style={{ color: '#000' }}>Create Custom Object</h2>
-        <div className="flex gap-2 items-center">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-3">
+        <h2 className="text-lg md:text-xl font-semibold" style={{ color: '#000' }}>Create Custom Object</h2>
+        <div className="flex flex-wrap gap-2 items-center">
           {/* Layer Order Buttons - Only show when shape is selected */}
           {selectedId && (() => {
             const selectedIndex = canvasShapes.findIndex(s => s.id === selectedId);
             const isAtFront = selectedIndex === canvasShapes.length - 1;
             const isAtBack = selectedIndex === 0;
             return (
-              <div className="flex items-center gap-1 mr-2">
+              <div className="flex items-center gap-1 mr-1 md:mr-2">
                 <button
                   onClick={() => bringForward(selectedId)}
                   disabled={isAtFront}
                   title="Bring Forward"
-                  className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+                  className="p-1.5 md:p-2 rounded-lg text-sm font-medium transition-all flex items-center"
                   style={{ 
                     background: isAtFront ? '#e5e7eb' : '#f3f4f6', 
                     color: isAtFront ? '#9ca3af' : '#004aad',
                     cursor: isAtFront ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <i className="fi fi-sr-bring-forward" style={{ fontSize: '16px' }}></i>
+                  <i className="fi fi-sr-bring-forward" style={{ fontSize: '14px' }}></i>
                 </button>
                 <button
                   onClick={() => sendBackward(selectedId)}
                   disabled={isAtBack}
                   title="Send Backward"
-                  className="p-2 rounded-lg text-sm font-medium transition-all flex items-center"
+                  className="p-1.5 md:p-2 rounded-lg text-sm font-medium transition-all flex items-center"
                   style={{ 
                     background: isAtBack ? '#e5e7eb' : '#f3f4f6', 
                     color: isAtBack ? '#9ca3af' : '#004aad',
                     cursor: isAtBack ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  <i className="fi fi-sr-send-backward" style={{ fontSize: '16px' }}></i>
+                  <i className="fi fi-sr-send-backward" style={{ fontSize: '14px' }}></i>
                 </button>
               </div>
             );
           })()}
           {/* Undo/Redo Buttons */}
-          <div className="flex items-center gap-1 mr-2">
+          <div className="flex items-center gap-1 mr-1 md:mr-2">
             <button
               onClick={undo}
               disabled={historyIndex <= 0}
@@ -3892,15 +4069,15 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                   setSaveDialogName('Custom Creation');
                   setShowSaveDialog(true);
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
                 style={{ background: '#004aad', color: '#fff' }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
                   <polyline points="17,21 17,13 7,13 7,21" />
                   <polyline points="7,3 7,8 15,8" />
                 </svg>
-                Save
+                <span className="hidden sm:inline">Save</span>
               </button>
               <button
                 onClick={() => {
@@ -3909,27 +4086,27 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                   setPublishDialogType('shape');
                   setShowPublishDialog(true);
                 }}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
                 style={{ background: '#ffde59', color: '#000' }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2L2 7l10 5 10-5-10-5z" />
                   <path d="M2 17l10 5 10-5" />
                   <path d="M2 12l10 5 10-5" />
                 </svg>
-                Publish
+                <span className="hidden sm:inline">Publish</span>
               </button>
             </>
           )}
           <button
             onClick={() => canvasShapes.length > 0 ? setShowClearConfirm(true) : null}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+            className="px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all flex items-center gap-1 md:gap-2"
             style={{ background: '#fee2e2', color: '#dc2626', opacity: canvasShapes.length === 0 ? 0.5 : 1, cursor: canvasShapes.length === 0 ? 'not-allowed' : 'pointer' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
             </svg>
-            Clear
+            <span className="hidden sm:inline">Clear</span>
           </button>
         </div>
       </div>
@@ -4147,15 +4324,16 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
         </div>
       )}
       
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-4 md:gap-6">
         {/* Canvas */}
-        <div className="flex-1">
+        <div className="flex-1 order-1 lg:order-none">
           <div 
             ref={canvasRef}
-            className="relative rounded-2xl overflow-hidden cursor-crosshair"
+            className="relative rounded-2xl overflow-hidden cursor-crosshair touch-none"
             style={{ 
               width: '100%', 
-              height: '650px', 
+              height: isMobile ? 'min(400px, 50vh)' : 'min(650px, 70vh)', 
+              minHeight: '250px',
               background: '#fff',
               boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)',
               border: '2px dashed #e5e7eb'
@@ -4163,6 +4341,42 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
             onMouseMove={handleCanvasMouseMove}
             onMouseUp={handleCanvasMouseUp}
             onMouseLeave={handleCanvasMouseUp}
+            onTouchStart={(e) => {
+              // Handle touch for mobile
+              if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY, stopPropagation: () => {} };
+                // Find if touching a shape
+                const canvas = canvasRef.current;
+                if (canvas) {
+                  const rect = canvas.getBoundingClientRect();
+                  const x = touch.clientX - rect.left;
+                  const y = touch.clientY - rect.top;
+                  // Check shapes in reverse order (top to bottom)
+                  for (let i = canvasShapes.length - 1; i >= 0; i--) {
+                    const s = canvasShapes[i];
+                    if (x >= s.x && x <= s.x + s.width && y >= s.y && y <= s.y + s.height) {
+                      setSelectedId(s.id);
+                      setDragState({
+                        id: s.id,
+                        type: 'move',
+                        offsetX: x - s.x,
+                        offsetY: y - s.y
+                      });
+                      return;
+                    }
+                  }
+                }
+              }
+            }}
+            onTouchMove={(e) => {
+              if (dragState && e.touches.length === 1) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                handleCanvasMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+              }
+            }}
+            onTouchEnd={() => handleCanvasMouseUp()}
             onClick={() => setSelectedId(null)}
           >
             {/* Grid */}
@@ -4297,7 +4511,7 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                     <rect x="3" y="3" width="18" height="18" rx="2" />
                     <path d="M12 8v8M8 12h8" />
                   </svg>
-                  <p className="text-sm" style={{ color: '#999' }}>Click shapes above to add them here</p>
+                  <p className="text-sm" style={{ color: '#999' }}>{isMobile ? 'Tap "Shapes" tab below to add shapes' : 'Click shapes above to add them here'}</p>
                 </div>
               </div>
             )}
@@ -4305,12 +4519,29 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
         </div>
         
         {/* Properties/Layers Panel */}
-        <div className="w-64">
+        <div className="w-full lg:w-64 order-2 lg:order-none">
           {/* Tab Buttons */}
           <div className="flex gap-1 p-1 rounded-xl mb-4" style={{ background: '#f3f4f6' }}>
+            {/* Shapes Tab - Mobile Only */}
+            {isMobile && (
+              <button
+                onClick={() => setRightPanelTab('shapes')}
+                className="flex-1 px-2 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1"
+                style={{
+                  background: rightPanelTab === 'shapes' ? '#fff' : 'transparent',
+                  color: rightPanelTab === 'shapes' ? '#004aad' : '#666',
+                  boxShadow: rightPanelTab === 'shapes' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Shapes
+              </button>
+            )}
             <button
               onClick={() => setRightPanelTab('properties')}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 px-2 md:px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 md:gap-1.5"
               style={{
                 background: rightPanelTab === 'properties' ? '#fff' : 'transparent',
                 color: rightPanelTab === 'properties' ? '#004aad' : '#666',
@@ -4321,11 +4552,11 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
               </svg>
-              Properties
+              {isMobile ? 'Props' : 'Properties'}
             </button>
             <button
               onClick={() => setRightPanelTab('layers')}
-              className="flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+              className="flex-1 px-2 md:px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 md:gap-1.5"
               style={{
                 background: rightPanelTab === 'layers' ? '#fff' : 'transparent',
                 color: rightPanelTab === 'layers' ? '#004aad' : '#666',
@@ -4340,6 +4571,39 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
               Layers
             </button>
           </div>
+
+          {/* Shapes Tab Content - Mobile Only */}
+          {isMobile && rightPanelTab === 'shapes' && (
+            <div className="mb-4">
+              <div className="grid grid-cols-4 gap-2">
+                {(() => {
+                  const sidebarColors = ['#FF6B6B', '#FF9F43', '#ffde59', '#6BCB77', '#4D96FF', '#6A4C93', '#FF8FAB'];
+                  const shapesList = [
+                    { type: 'rectangle', name: 'Rect', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="2" y="4" width="20" height="16" rx="2" /></svg> },
+                    { type: 'square', name: 'Square', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><rect x="3" y="3" width="18" height="18" rx="2" /></svg> },
+                    { type: 'circle', name: 'Circle', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><circle cx="12" cy="12" r="10" /></svg> },
+                    { type: 'ellipse', name: 'Ellipse', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><ellipse cx="12" cy="12" rx="10" ry="6" /></svg> },
+                    { type: 'triangle', name: 'Tri', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,22 2,22" /></svg> },
+                    { type: 'diamond', name: 'Diamond', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 22,12 12,22 2,12" /></svg> },
+                    { type: 'star', name: 'Star', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" /></svg> },
+                    { type: 'text', name: 'Text', getIcon: (c) => <svg width="20" height="20" viewBox="0 0 24 24" fill={c}><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fontFamily="Arial">T</text></svg> },
+                  ];
+                  return shapesList.map((shape, index) => (
+                    <button
+                      key={shape.type}
+                      onClick={() => addShapeToCanvas(shape.type)}
+                      className="flex flex-col items-center gap-1 p-3 rounded-lg transition-all active:scale-95"
+                      style={{ background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+                    >
+                      {shape.getIcon(sidebarColors[index % sidebarColors.length])}
+                      <span className="text-xs" style={{ color: '#000' }}>{shape.name}</span>
+                    </button>
+                  ));
+                })()}
+              </div>
+              <p className="text-xs mt-3 text-center" style={{ color: '#666' }}>Tap a shape to add it to the canvas</p>
+            </div>
+          )}
 
           {/* Properties Tab Content */}
           {rightPanelTab === 'properties' && (
@@ -4790,23 +5054,23 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
       </div>
       
       {/* Generated Code */}
-      <div className="mt-6 flex flex-col gap-4">
+      <div className="mt-4 md:mt-6 flex flex-col gap-3 md:gap-4">
         <div>
           <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>CSS</label>
           <div className="relative">
             <pre 
-              className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
+              className="p-3 md:p-4 rounded-xl text-xs overflow-auto cursor-pointer"
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '150px' }}
               onClick={() => copyCSS(generateCanvasCSS())}
             >
               <code>{generateCanvasCSS()}</code>
             </pre>
             <button
               onClick={() => copyCSS(generateCanvasCSS())}
-              className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium transition-all"
-              style={{ background: copiedCSS ? '#10b981' : '#004aad', color: '#fff' }}
+              className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] md:text-xs font-medium transition-all"
+              style={{ background: copiedCSS ? '#10b981' : '#004aad', color: '#fff', minHeight: 'auto' }}
             >
-              {copiedCSS ? 'Copied!' : 'Copy'}
+              {copiedCSS ? '✓' : 'Copy'}
             </button>
           </div>
         </div>
@@ -4814,18 +5078,18 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
           <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#000' }}>HTML</label>
           <div className="relative">
             <pre 
-              className="p-4 rounded-xl text-xs overflow-auto cursor-pointer"
-              style={{ background: '#f3f4f6', color: '#000', maxHeight: '200px' }}
+              className="p-3 md:p-4 rounded-xl text-xs overflow-auto cursor-pointer"
+              style={{ background: '#f3f4f6', color: '#000', maxHeight: '150px' }}
               onClick={() => copyHTML(generateCanvasHTML())}
             >
               <code>{generateCanvasHTML()}</code>
             </pre>
             <button
               onClick={() => copyHTML(generateCanvasHTML())}
-              className="absolute top-2 right-2 px-2 py-1 rounded text-xs font-medium transition-all"
-              style={{ background: copiedHTML ? '#10b981' : '#004aad', color: '#fff' }}
+              className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] md:text-xs font-medium transition-all"
+              style={{ background: copiedHTML ? '#10b981' : '#004aad', color: '#fff', minHeight: 'auto' }}
             >
-              {copiedHTML ? 'Copied!' : 'Copy'}
+              {copiedHTML ? '✓' : 'Copy'}
             </button>
           </div>
         </div>
