@@ -2855,30 +2855,29 @@ function CreationEditor({ shapes, onBack, onOverwrite, onSaveAsNew, showNotifica
               )}
               
               {/* Size */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Width: {Math.round(selectedShape.width)}px</label>
-                <input
-                  type="range"
-                  min="20"
-                  max="300"
-                  value={selectedShape.width}
-                  onChange={(e) => updateSelectedShape('width', Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.width - 20) / 280 * 100}%, #e5e7eb ${(selectedShape.width - 20) / 280 * 100}%)` }}
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Height: {Math.round(selectedShape.height)}px</label>
-                <input
-                  type="range"
-                  min="20"
-                  max="300"
-                  value={selectedShape.height}
-                  onChange={(e) => updateSelectedShape('height', Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.height - 20) / 280 * 100}%, #e5e7eb ${(selectedShape.height - 20) / 280 * 100}%)` }}
-                />
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Width</label>
+                  <input
+                    type="number"
+                    min="20"
+                    value={Math.round(selectedShape.width)}
+                    onChange={(e) => updateSelectedShape('width', Number(e.target.value))}
+                    className="w-full px-2 py-1 rounded text-xs"
+                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Height</label>
+                  <input
+                    type="number"
+                    min="20"
+                    value={Math.round(selectedShape.height)}
+                    onChange={(e) => updateSelectedShape('height', Number(e.target.value))}
+                    className="w-full px-2 py-1 rounded text-xs"
+                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
+                  />
+                </div>
               </div>
               
               {/* Rotation */}
@@ -4270,30 +4269,29 @@ function ShapeCreator({ copied, copyToClipboard, onSaveCreation, onPublishToLibr
               )}
               
               {/* Size */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Width: {Math.round(selectedShape.width)}px</label>
-                <input
-                  type="range"
-                  min="20"
-                  max="300"
-                  value={selectedShape.width}
-                  onChange={(e) => updateSelectedShape('width', Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.width - 20) / 280 * 100}%, #e5e7eb ${(selectedShape.width - 20) / 280 * 100}%)` }}
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-xs font-medium uppercase tracking-wide mb-2" style={{ color: '#666' }}>Height: {Math.round(selectedShape.height)}px</label>
-                <input
-                  type="range"
-                  min="20"
-                  max="300"
-                  value={selectedShape.height}
-                  onChange={(e) => updateSelectedShape('height', Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, #004aad ${(selectedShape.height - 20) / 280 * 100}%, #e5e7eb ${(selectedShape.height - 20) / 280 * 100}%)` }}
-                />
+              <div className="mb-4 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Width</label>
+                  <input
+                    type="number"
+                    min="20"
+                    value={Math.round(selectedShape.width)}
+                    onChange={(e) => updateSelectedShape('width', Number(e.target.value))}
+                    className="w-full px-2 py-1 rounded text-xs"
+                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium uppercase tracking-wide mb-1" style={{ color: '#666' }}>Height</label>
+                  <input
+                    type="number"
+                    min="20"
+                    value={Math.round(selectedShape.height)}
+                    onChange={(e) => updateSelectedShape('height', Number(e.target.value))}
+                    className="w-full px-2 py-1 rounded text-xs"
+                    style={{ background: '#f8f9fa', border: '1px solid #e5e7eb', color: '#000' }}
+                  />
+                </div>
               </div>
               
               {/* Rotation */}
