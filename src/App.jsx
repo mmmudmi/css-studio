@@ -2440,18 +2440,29 @@ function ShapeCreator({
     setDragState(null);
   }, [dragState]);
   
-  // Global mouse event listeners for smooth dragging/resizing
+  // Global mouse and touch event listeners for smooth dragging/resizing
   React.useEffect(() => {
     if (dragState) {
       const handleGlobalMouseMove = (e) => handleCanvasMouseMove(e);
       const handleGlobalMouseUp = () => handleCanvasMouseUp();
+      const handleGlobalTouchMove = (e) => {
+        if (e.touches.length === 1) {
+          e.preventDefault();
+          handleCanvasMouseMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY });
+        }
+      };
+      const handleGlobalTouchEnd = () => handleCanvasMouseUp();
       
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+      document.addEventListener('touchend', handleGlobalTouchEnd);
       
       return () => {
         document.removeEventListener('mousemove', handleGlobalMouseMove);
         document.removeEventListener('mouseup', handleGlobalMouseUp);
+        document.removeEventListener('touchmove', handleGlobalTouchMove);
+        document.removeEventListener('touchend', handleGlobalTouchEnd);
       };
     }
   }, [dragState, handleCanvasMouseMove, handleCanvasMouseUp]);
@@ -3305,10 +3316,10 @@ function ShapeCreator({
                 >
                   {/* Resize handle */}
                   <div
-                    className="absolute w-4 h-4 rounded-full cursor-se-resize pointer-events-auto"
+                    className="absolute w-6 h-6 md:w-4 md:h-4 rounded-full cursor-se-resize pointer-events-auto"
                     style={{
-                      right: -8,
-                      bottom: -8,
+                      right: -12,
+                      bottom: -12,
                       background: '#004aad',
                       border: '2px solid #fff',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
@@ -3326,6 +3337,21 @@ function ShapeCreator({
                         startX: e.clientX,
                         startY: e.clientY
                       });
+                    }}
+                    onTouchStart={(e) => {
+                      e.stopPropagation();
+                      if (e.touches.length === 1) {
+                        const touch = e.touches[0];
+                        setDragState({
+                          id: shape.id,
+                          type: 'resize',
+                          corner: 'br',
+                          startWidth: shape.width,
+                          startHeight: shape.height,
+                          startX: touch.clientX,
+                          startY: touch.clientY
+                        });
+                      }
                     }}
                   />
                   {/* Corner indicators */}
